@@ -3,22 +3,21 @@
 
 import { jsx, css } from '@emotion/react'
 import { render } from "react-dom";
+import MarkdownEditor from './MarkdownEditor';
 
 const App = () => {
   return <div css={css`
         display: grid;
         grid-template-columns: 50% 50%;
-        grid-template-rows: 30px auto 300px;
+        grid-template-rows: 30px auto;
         grid-template-areas:
           "header header"
-          "app-left app-right"
-          "meta meta";
+          "app-left app-right";
         column-gap: 20px;
         row-gap: 10px;
         font-family: "Fira Sans", sans-serif;
-        width: 98vw;
+        width: 100vw;
         height: 100vh;
-        padding: 0 20px;
         box-sizing: border-box;
       `}>
         <div css={css`
@@ -27,13 +26,10 @@ const App = () => {
           <strong>Automerge Markdown Editor with Comments</strong>
         </div>
         <div css={css`grid-area: app-left; overflow: hidden;`}>
-          This is the right app
+          <MarkdownEditor />
         </div>
         <div css={css`grid-area: app-right; overflow: hidden;`}>
-          This is the left app
-        </div>
-        <div css={css`grid-area: meta;`}>
-          This space reserved for debug
+          Right app
         </div>
       </div>
 }
