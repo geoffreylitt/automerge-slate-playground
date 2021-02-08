@@ -45,21 +45,18 @@ export type Doc = {
   comments: Comment[];
 }
 
-function useAutomergeDoc<T>() {
-  const [doc, setDoc] = useState<T>(Automerge.init() as T)
+function useAutomergeDoc(): [Doc, (callback: any) => void] {
+  const [doc, setDoc] = useState<Doc>(Automerge.from(initialDoc))
 
   const changeDoc = (callback) => {
     setDoc(doc => Automerge.change(doc, d => callback(d)))
   }
 
-  changeDoc(doc => doc.text = new Automerge.Text(initialContent))
-
   return [doc, changeDoc]
 }
 
 export default function MarkdownEditor() {
-  // const [doc, changeDoc] = useAutomergeDoc()
-  const [doc, setDoc] = useState<Doc>(initialDoc)
+  const [doc, changeDoc] = useAutomergeDoc()
   const [selection, setSelection] = useState<Range>(null)
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
 
@@ -77,8 +74,7 @@ export default function MarkdownEditor() {
   ]);
 
   const setContent = (newContent: Node[]) => {
-    // changeDoc(doc => doc.content = (newContent[0].children as Node[])[0].text)
-    setDoc(doc => ({...doc, content: (newContent[0].children as Node[])[0].text as string }))
+    changeDoc(doc => doc.content = (newContent[0].children as Node[])[0].text)
   }
 
   const addComment = () => {}
