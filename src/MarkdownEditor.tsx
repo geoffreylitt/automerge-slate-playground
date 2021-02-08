@@ -25,7 +25,7 @@ const initialContent = `## Goals
   - Sync between board and editor`
 
 const initialDoc:Doc = {
-  content: initialContent,
+  content: new Automerge.Text(initialContent),
   comments: []
 }
 
@@ -33,15 +33,43 @@ const initialDoc:Doc = {
 // @ts-ignore
 Prism.languages.markdown=Prism.languages.extend("markup",{}),Prism.languages.insertBefore("markdown","prolog",{blockquote:{pattern:/^>(?:[\t ]*>)*/m,alias:"punctuation"},code:[{pattern:/^(?: {4}|\t).+/m,alias:"keyword"},{pattern:/``.+?``|`[^`\n]+`/,alias:"keyword"}],title:[{pattern:/\w+.*(?:\r?\n|\r)(?:==+|--+)/,alias:"important",inside:{punctuation:/==+$|--+$/}},{pattern:/(^\s*)#+.+/m,lookbehind:!0,alias:"important",inside:{punctuation:/^#+|#+$/}}],hr:{pattern:/(^\s*)([*-])([\t ]*\2){2,}(?=\s*$)/m,lookbehind:!0,alias:"punctuation"},list:{pattern:/(^\s*)(?:[*+-]|\d+\.)(?=[\t ].)/m,lookbehind:!0,alias:"punctuation"},"url-reference":{pattern:/!?\[[^\]]+\]:[\t ]+(?:\S+|<(?:\\.|[^>\\])+>)(?:[\t ]+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\)))?/,inside:{variable:{pattern:/^(!?\[)[^\]]+/,lookbehind:!0},string:/(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\))$/,punctuation:/^[\[\]!:]|[<>]/},alias:"url"},bold:{pattern:/(^|[^\\])(\*\*|__)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^\*\*|^__|\*\*$|__$/}},italic:{pattern:/(^|[^\\])([*_])(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^[*_]|[*_]$/}},url:{pattern:/!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,inside:{variable:{pattern:/(!?\[)[^\]]+(?=\]$)/,lookbehind:!0},string:{pattern:/"(?:\\.|[^"\\])*"(?=\)$)/}}}}),Prism.languages.markdown.bold.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.italic.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.bold.inside.italic=Prism.util.clone(Prism.languages.markdown.italic),Prism.languages.markdown.italic.inside.bold=Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
 
+type AutomergeSpan = {
+  start: Automerge.Cursor;
+  end: Automerge.Cursor;
+}
+
 export type Comment = {
   id: string;
-  cursor: number;
+  range: AutomergeSpan;
   text: string;
 }
 
+// convert automerge span to slate range,
+// assume only a single text block for now
+function slateRangeFromAutomergeSpan(span: AutomergeSpan): Range {
+  return {
+    anchor: {
+      path: [0, 0],
+      offset: span.start.index
+    },
+    focus: {
+      path: [0, 0],
+      offset: span.end.index
+    }
+  }
+}
+
+function automergeSpanFromSlateRange(text: Automerge.Text, range: Range): AutomergeSpan {
+  // We throw away the path info from the range;
+  // assume we only have a single text node
+  return {
+    start: text.getCursorAt(range.anchor.offset),
+    end: text.getCursorAt(range.focus.offset)
+  }
+}
 
 export type Doc = {
-  content: string;
+  content: Automerge.Text;
   comments: Comment[];
 }
 
@@ -60,11 +88,13 @@ export default function MarkdownEditor() {
   const [selection, setSelection] = useState<Range>(null)
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
 
+  console.log(doc)
+
   const docSpans = doc.comments
 
   const content:Node[] = [
     {
-      children: [ { text: doc.content } ]
+      children: [ { text: doc.content.toString() } ]
     }
   ]
 
@@ -73,33 +103,35 @@ export default function MarkdownEditor() {
     activeCommentId,
   ]);
 
-  const setContent = (newContent: Node[]) => {
-    changeDoc(doc => doc.content = (newContent[0].children as Node[])[0].text)
+  // todo: we need to hook in at a different point, blowing away whole text won't work
+  const setContent= () => {}
+  // const setContent = (newContent: Node[]) => {
+  //   changeDoc(doc => doc.content = new Automerge.Text(newContent[0].children as Node[])[0].text)
+  // }
+
+  const addComment = () => {
+    console.log(selection)
+    changeDoc((doc: Doc) => {
+      console.log("in here", doc.content.getElemId(1))
+      doc.comments.push({
+        id: uuidv4(),
+        // todo: pick the real location
+        range: automergeSpanFromSlateRange(doc.content, selection),
+        text: loremIpsum()
+      })
+    })
   }
 
-  const addComment = () => {}
-  // const addComment = () => {
-  //   changeDoc((doc: Doc) => {
-  //     doc.comments.push({
-  //       id: uuidv4(),
-  //       // todo: pick the real location
-  //       cursor: doc.content.getCursorAt(5),
-  //       text: loremIpsum()
-  //     })
-  //   })
-  // }
-    // todo: I think can replace this with just a setSelection callback.
-  // weird usage of useEffect to trigger on a state change.
-  // useEffect(() => {
-  //   let activeCommentId = null
-  //   for (const comment of docSpans) {
-  //     if(activeCommentId !== comment.id && selection && Range.intersection(selection, comment.range)) {
-  //       activeCommentId = comment.id
-  //       break
-  //     }
-  //   }
-  //   setActiveCommentId(activeCommentId)
-  // }, [selection])
+  useEffect(() => {
+    let activeCommentId = null
+    for (const comment of docSpans) {
+      if(activeCommentId !== comment.id && selection && Range.intersection(selection, slateRangeFromAutomergeSpan(comment.range))) {
+        activeCommentId = comment.id
+        break
+      }
+    }
+    setActiveCommentId(activeCommentId)
+  }, [selection])
 
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
@@ -124,20 +156,22 @@ export default function MarkdownEditor() {
       };
 
       // Add comment highlighting decorations
-      // for (const docSpan of docSpans) {
-      //   // Check whether the comment is on this node
-      //   if (activeCommentId === docSpan.id) {
-      //     ranges.push({
-      //       extraHighlighted: true,
-      //       ...docSpan.cursor,
-      //     });
-      //   } else {
-      //     ranges.push({
-      //       highlighted: true,
-      //       ...docSpan.cursor,
-      //     });
-      //   }
-      // }
+      for (const docSpan of docSpans) {
+        // Check whether the comment is on this node
+        console.log("highlighting", docSpan, docSpan.range.start.index, docSpan.range.end.index)
+
+        if (activeCommentId === docSpan.id) {
+          ranges.push({
+            ...slateRangeFromAutomergeSpan(docSpan.range),
+            extraHighlighted: true,
+          });
+        } else {
+          ranges.push({
+            ...slateRangeFromAutomergeSpan(docSpan.range),
+            highlighted: true
+          });
+        }
+      }
 
       // Add Markdown decorations
 
@@ -159,6 +193,7 @@ export default function MarkdownEditor() {
         start = end;
       }
 
+      console.log({ranges})
       return ranges;
     },
     [docSpans, activeCommentId]
@@ -206,6 +241,13 @@ export default function MarkdownEditor() {
             }}
           />
         </Slate>
+      </div>
+      <div css={css`grid-area: comments;`}>
+        <Comments
+          comments={doc.comments}
+          activeCommentId={activeCommentId}
+          setActiveCommentId={setActiveCommentId}
+        />
       </div>
     </div>
   );
@@ -268,4 +310,48 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
     </span>
   );
 };
+
+type CommentsProps = {
+  comments: Comment[];
+  activeCommentId: string;
+  setActiveCommentId: any;
+};
+
+function Comments({
+  comments,
+  activeCommentId,
+  setActiveCommentId,
+}: CommentsProps) {
+  // todo: sort the comments
+
+  return (
+    <div className="comments-list">
+      {comments.map((comment) => {
+        return (
+          <div
+            key={comment.id}
+            css={css`
+              border: solid thin #ddd;
+              border-radius: 10px;
+              padding: 10px;
+              margin: 10px;
+              cursor: pointer;
+
+              &:hover {
+                border: solid thin #bbb;
+              }
+
+              ${activeCommentId === comment.id &&
+              `border: solid thin #bbb;
+              box-shadow: 0px 0px 5px 3px #ddd;`}
+            `}
+            onClick={() => setActiveCommentId(comment.id)}
+          >
+            {comment.text}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
