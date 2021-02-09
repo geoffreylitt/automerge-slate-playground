@@ -13,6 +13,7 @@ Maybe will grow to include other features like rich text?
 # Run locally
 
 `yarn`
+
 `yarn start`
 
 Open [localhost:8181](http://localhost:8181) to see the app
