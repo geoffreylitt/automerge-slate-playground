@@ -18,8 +18,14 @@ Maybe will grow to include other features like rich text?
 
 Open [localhost:8181](http://localhost:8181) to see the app
 
+# How it works
+
+- Automerge doc is the source of truth. Stores text as a string, plus comments which each contain two Automerge cursors to denote a span in the text
+- Doesn't meaningfully use Slate's tree representation. Just treats the doc as a single text node.
+- Intercepts insert/delete operations from the Slate editor, and converts to corresponding Automerge Text ops to edit
+
 # Todos
 
 - Add a second client window with option to enable/disable sync, for testing concurrent editing
 - Figure out TS types for Cursors
-- Add a rich text mode?
+- Add a rich text mode using the OAFS model. (could build off of the [Slate Rich Text](https://www.slatejs.org/examples/richtext) example)
