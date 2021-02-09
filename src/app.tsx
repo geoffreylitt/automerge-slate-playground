@@ -5,53 +5,25 @@ import { jsx, css } from '@emotion/react'
 import { render } from "react-dom";
 import MarkdownEditor from './MarkdownEditor';
 import Automerge from 'automerge'
-import { useState } from 'react';
-
-export type AutomergeSpan = {
-  start: Automerge.Cursor;
-  end: Automerge.Cursor;
-}
-
-export type Comment = {
-  id: string;
-  range: AutomergeSpan;
-  text: string;
-}
-
-export type MarkdownDoc = {
-  content: Automerge.Text;
-  comments: Comment[];
-}
-
-const initialContent = `## Goals
-- Monolithic -> Customizable
-- Siloed -> Interoperable
-## Model
-- Library of Concepts users can dynamically reconfigure
-- Powerful data synchronizations enable composition
-## Demo
-- Interop between editors
-- Show comments workflow on a kanban board
-  - Add a resolved concept
-  - Sync between board and editor`
+import { useAutomergeDoc } from './hooks'
+import { MarkdownDoc } from './slate-automerge'
 
 const initialDoc:MarkdownDoc = {
-  content: new Automerge.Text(initialContent),
+  content: new Automerge.Text(`# Slate Automerge
+This is some text. It supports _italic_ and **bolding**. And lists, too:
+
+- a thing
+- another thing
+- yet another thing
+
+Try highlighting a region and clicking Comment.
+
+Even as you edit the doc, the comment will stay attached to the correct portion of the text.`),
   comments: []
 }
 
-function useAutomergeDoc(): [MarkdownDoc, (callback: any) => void] {
-  const [doc, setDoc] = useState<MarkdownDoc>(Automerge.from(initialDoc))
-
-  const changeDoc = (callback) => {
-    setDoc(doc => Automerge.change(doc, d => callback(d)))
-  }
-
-  return [doc, changeDoc]
-}
-
 const App = () => {
-  const [doc, changeDoc] = useAutomergeDoc()
+  const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>(initialDoc)
 
   return <div css={css`
         display: grid;
@@ -76,6 +48,7 @@ const App = () => {
           <MarkdownEditor doc={doc} changeDoc={changeDoc} />
         </div>
         <div css={css`grid-area: app-right; overflow: hidden;`}>
+          {/* todo: add a second client in this box */}
         </div>
       </div>
 }

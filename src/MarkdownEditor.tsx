@@ -10,8 +10,7 @@ import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
 import Prism, { Token } from "prismjs";
 import { loremIpsum } from "lorem-ipsum";
 import { v4 as uuidv4 } from 'uuid';
-import Automerge from 'automerge';
-import { AutomergeSpan, MarkdownDoc, Comment } from "./app";
+import { MarkdownDoc, Comment, slateRangeFromAutomergeSpan, automergeSpanFromSlateRange } from "./slate-automerge";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -26,30 +25,6 @@ const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
 // @ts-ignore
 Prism.languages.markdown=Prism.languages.extend("markup",{}),Prism.languages.insertBefore("markdown","prolog",{blockquote:{pattern:/^>(?:[\t ]*>)*/m,alias:"punctuation"},code:[{pattern:/^(?: {4}|\t).+/m,alias:"keyword"},{pattern:/``.+?``|`[^`\n]+`/,alias:"keyword"}],title:[{pattern:/\w+.*(?:\r?\n|\r)(?:==+|--+)/,alias:"important",inside:{punctuation:/==+$|--+$/}},{pattern:/(^\s*)#+.+/m,lookbehind:!0,alias:"important",inside:{punctuation:/^#+|#+$/}}],hr:{pattern:/(^\s*)([*-])([\t ]*\2){2,}(?=\s*$)/m,lookbehind:!0,alias:"punctuation"},list:{pattern:/(^\s*)(?:[*+-]|\d+\.)(?=[\t ].)/m,lookbehind:!0,alias:"punctuation"},"url-reference":{pattern:/!?\[[^\]]+\]:[\t ]+(?:\S+|<(?:\\.|[^>\\])+>)(?:[\t ]+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\)))?/,inside:{variable:{pattern:/^(!?\[)[^\]]+/,lookbehind:!0},string:/(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\))$/,punctuation:/^[\[\]!:]|[<>]/},alias:"url"},bold:{pattern:/(^|[^\\])(\*\*|__)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^\*\*|^__|\*\*$|__$/}},italic:{pattern:/(^|[^\\])([*_])(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^[*_]|[*_]$/}},url:{pattern:/!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,inside:{variable:{pattern:/(!?\[)[^\]]+(?=\]$)/,lookbehind:!0},string:{pattern:/"(?:\\.|[^"\\])*"(?=\)$)/}}}}),Prism.languages.markdown.bold.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.italic.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.bold.inside.italic=Prism.util.clone(Prism.languages.markdown.italic),Prism.languages.markdown.italic.inside.bold=Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
 
-// convert an Automerge Span to a Slate Range.
-// Assumes the Slate doc only has a single text node, and no other blocks.
-function slateRangeFromAutomergeSpan(span: AutomergeSpan): Range {
-  return {
-    anchor: {
-      path: [0, 0],
-      offset: span.start.index
-    },
-    focus: {
-      path: [0, 0],
-      offset: span.end.index
-    }
-  }
-}
-
-// convert a Slate Range to an Automerge Span.
-// Assumes the Slate doc only has a single text node, and no other blocks.
-function automergeSpanFromSlateRange(text: Automerge.Text, range: Range): AutomergeSpan {
-  return {
-    start: text.getCursorAt(range.anchor.offset),
-    end: text.getCursorAt(range.focus.offset)
-  }
-}
-
 type MarkdownEditorProps = {
   doc: MarkdownDoc;
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void
@@ -61,6 +36,8 @@ export default function MarkdownEditor({ doc, changeDoc }: MarkdownEditorProps) 
 
   const docSpans = doc.comments
 
+  // We model the document for Slate as a single text node.
+  // It should stay a single node throughout all edits.
   const content:Node[] = [
     {
       children: [ { text: doc.content.toString() } ]
@@ -82,6 +59,7 @@ export default function MarkdownEditor({ doc, changeDoc }: MarkdownEditorProps) 
     })
   }
 
+  // Set the active comment based on the latest selection in the doc
   useEffect(() => {
     let activeCommentId = null
     for (const comment of docSpans) {
