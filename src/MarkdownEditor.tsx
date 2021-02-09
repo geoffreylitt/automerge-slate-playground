@@ -4,48 +4,30 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 
-import { createEditor, Text, Range, Point, Node } from "slate";
+import { createEditor, Text, Range, Point, Node, Operation, Editor } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
 import Prism, { Token } from "prismjs";
 import { loremIpsum } from "lorem-ipsum";
 import { v4 as uuidv4 } from 'uuid';
 import Automerge from 'automerge';
+import { AutomergeSpan, MarkdownDoc, Comment } from "./app";
 
-const initialContent = `## Goals
-- Monolithic -> Customizable
-- Siloed -> Interoperable
-## Model
-- Library of Concepts users can dynamically reconfigure
-- Powerful data synchronizations enable composition
-## Demo
-- Interop between editors
-- Show comments workflow on a kanban board
-  - Add a resolved concept
-  - Sync between board and editor`
-
-const initialDoc:Doc = {
-  content: new Automerge.Text(initialContent),
-  comments: []
+const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
+  const { apply } = editor;
+  editor.apply = (op) => {
+    apply(op)
+    callback(op)
+  }
+  return editor;
 }
 
 // eslint-disable-next-line
 // @ts-ignore
 Prism.languages.markdown=Prism.languages.extend("markup",{}),Prism.languages.insertBefore("markdown","prolog",{blockquote:{pattern:/^>(?:[\t ]*>)*/m,alias:"punctuation"},code:[{pattern:/^(?: {4}|\t).+/m,alias:"keyword"},{pattern:/``.+?``|`[^`\n]+`/,alias:"keyword"}],title:[{pattern:/\w+.*(?:\r?\n|\r)(?:==+|--+)/,alias:"important",inside:{punctuation:/==+$|--+$/}},{pattern:/(^\s*)#+.+/m,lookbehind:!0,alias:"important",inside:{punctuation:/^#+|#+$/}}],hr:{pattern:/(^\s*)([*-])([\t ]*\2){2,}(?=\s*$)/m,lookbehind:!0,alias:"punctuation"},list:{pattern:/(^\s*)(?:[*+-]|\d+\.)(?=[\t ].)/m,lookbehind:!0,alias:"punctuation"},"url-reference":{pattern:/!?\[[^\]]+\]:[\t ]+(?:\S+|<(?:\\.|[^>\\])+>)(?:[\t ]+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\)))?/,inside:{variable:{pattern:/^(!?\[)[^\]]+/,lookbehind:!0},string:/(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\))$/,punctuation:/^[\[\]!:]|[<>]/},alias:"url"},bold:{pattern:/(^|[^\\])(\*\*|__)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^\*\*|^__|\*\*$|__$/}},italic:{pattern:/(^|[^\\])([*_])(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^[*_]|[*_]$/}},url:{pattern:/!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,inside:{variable:{pattern:/(!?\[)[^\]]+(?=\]$)/,lookbehind:!0},string:{pattern:/"(?:\\.|[^"\\])*"(?=\)$)/}}}}),Prism.languages.markdown.bold.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.italic.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.bold.inside.italic=Prism.util.clone(Prism.languages.markdown.italic),Prism.languages.markdown.italic.inside.bold=Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
 
-type AutomergeSpan = {
-  start: Automerge.Cursor;
-  end: Automerge.Cursor;
-}
-
-export type Comment = {
-  id: string;
-  range: AutomergeSpan;
-  text: string;
-}
-
-// convert automerge span to slate range,
-// assume only a single text block for now
+// convert an Automerge Span to a Slate Range.
+// Assumes the Slate doc only has a single text node, and no other blocks.
 function slateRangeFromAutomergeSpan(span: AutomergeSpan): Range {
   return {
     anchor: {
@@ -59,36 +41,23 @@ function slateRangeFromAutomergeSpan(span: AutomergeSpan): Range {
   }
 }
 
+// convert a Slate Range to an Automerge Span.
+// Assumes the Slate doc only has a single text node, and no other blocks.
 function automergeSpanFromSlateRange(text: Automerge.Text, range: Range): AutomergeSpan {
-  // We throw away the path info from the range;
-  // assume we only have a single text node
   return {
     start: text.getCursorAt(range.anchor.offset),
     end: text.getCursorAt(range.focus.offset)
   }
 }
 
-export type Doc = {
-  content: Automerge.Text;
-  comments: Comment[];
+type MarkdownEditorProps = {
+  doc: MarkdownDoc;
+  changeDoc: (callback: (doc: MarkdownDoc) => void) => void
 }
 
-function useAutomergeDoc(): [Doc, (callback: any) => void] {
-  const [doc, setDoc] = useState<Doc>(Automerge.from(initialDoc))
-
-  const changeDoc = (callback) => {
-    setDoc(doc => Automerge.change(doc, d => callback(d)))
-  }
-
-  return [doc, changeDoc]
-}
-
-export default function MarkdownEditor() {
-  const [doc, changeDoc] = useAutomergeDoc()
+export default function MarkdownEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range>(null)
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null)
-
-  console.log(doc)
 
   const docSpans = doc.comments
 
@@ -103,19 +72,10 @@ export default function MarkdownEditor() {
     activeCommentId,
   ]);
 
-  // todo: we need to hook in at a different point, blowing away whole text won't work
-  const setContent= () => {}
-  // const setContent = (newContent: Node[]) => {
-  //   changeDoc(doc => doc.content = new Automerge.Text(newContent[0].children as Node[])[0].text)
-  // }
-
   const addComment = () => {
-    console.log(selection)
-    changeDoc((doc: Doc) => {
-      console.log("in here", doc.content.getElemId(1))
+    changeDoc((doc: MarkdownDoc) => {
       doc.comments.push({
         id: uuidv4(),
-        // todo: pick the real location
         range: automergeSpanFromSlateRange(doc.content, selection),
         text: loremIpsum()
       })
@@ -133,7 +93,17 @@ export default function MarkdownEditor() {
     setActiveCommentId(activeCommentId)
   }, [selection])
 
-  const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+  const editor = useMemo(() => {
+    return withOpHandler(withHistory(withReact(createEditor())), (op: Operation) => {
+      console.log("applying Slate operation", op)
+      if (op.type === 'insert_text') {
+        changeDoc((doc: MarkdownDoc) => doc.content.insertAt(op.offset, op.text))
+      }
+      if (op.type === 'remove_text') {
+        changeDoc((doc: MarkdownDoc) => doc.content.deleteAt(op.offset, op.text.length))
+      }
+    });
+  }, []);
 
   const decorate = useCallback(
     ([node, path]) => {
@@ -157,9 +127,6 @@ export default function MarkdownEditor() {
 
       // Add comment highlighting decorations
       for (const docSpan of docSpans) {
-        // Check whether the comment is on this node
-        console.log("highlighting", docSpan, docSpan.range.start.index, docSpan.range.end.index)
-
         if (activeCommentId === docSpan.id) {
           ranges.push({
             ...slateRangeFromAutomergeSpan(docSpan.range),
@@ -193,7 +160,6 @@ export default function MarkdownEditor() {
         start = end;
       }
 
-      console.log({ranges})
       return ranges;
     },
     [docSpans, activeCommentId]
@@ -214,6 +180,7 @@ export default function MarkdownEditor() {
       <div css={css`grid-area: toolbar;`}>
         <button
           className="toolbar-button"
+          disabled={selection?.anchor?.offset === selection?.focus?.offset}
           onClick={addComment}>
             💬 Comment
         </button>
@@ -223,7 +190,7 @@ export default function MarkdownEditor() {
         padding: 5px;
         grid-area: editor;
       `}>
-        <Slate editor={editor} value={content} onChange={setContent}>
+        <Slate editor={editor} value={content}>
           <Editable
             decorate={decorate}
             renderLeaf={renderLeaf}
@@ -327,6 +294,11 @@ function Comments({
   return (
     <div className="comments-list">
       {comments.map((comment) => {
+        // If a comment's start and end index are the same,
+        // the span it pointed to has been removed from the doc
+        if(comment.range.start.index === comment.range.end.index) {
+          return null
+        }
         return (
           <div
             key={comment.id}
@@ -348,6 +320,10 @@ function Comments({
             onClick={() => setActiveCommentId(comment.id)}
           >
             {comment.text}
+            <div css={css`margin-top: 5px; font-size: 12px;`}>
+            (Text index: {comment.range.start.index} to {comment.range.end.index})
+            </div>
+
           </div>
         );
       })}
