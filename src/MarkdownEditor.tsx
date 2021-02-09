@@ -190,7 +190,7 @@ export default function MarkdownEditor({ doc, changeDoc }: MarkdownEditorProps) 
         padding: 5px;
         grid-area: editor;
       `}>
-        <Slate editor={editor} value={content}>
+        <Slate editor={editor} value={content} onChange={() => {}}>
           <Editable
             decorate={decorate}
             renderLeaf={renderLeaf}

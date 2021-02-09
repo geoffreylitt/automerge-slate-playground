@@ -177,7 +177,7 @@ You should wrap it with \`css\` like this:
         border: solid thin #ddd;
         padding: 5px;
         grid-area: editor;
-      `},sn(y_,{editor:m,value:b},sn(T_,{decorate:w,renderLeaf:E,placeholder:"Write some markdown here!",onSelect:()=>{s(m.selection)},onKeyDown:I=>{I.key==="Enter"&&(I.preventDefault(),m.insertText(`
+      `},sn(y_,{editor:m,value:b,onChange:()=>{}},sn(T_,{decorate:w,renderLeaf:E,placeholder:"Write some markdown here!",onSelect:()=>{s(m.selection)},onKeyDown:I=>{I.key==="Enter"&&(I.preventDefault(),m.insertText(`
 `))}}))),sn("div",{css:wn`grid-area: comments;`},sn(bL,{comments:r.comments,activeCommentId:f,setActiveCommentId:d})))}var yL=({attributes:r,children:a,leaf:o})=>sn("span",{...r,css:wn`
         font-weight: ${o.bold&&"bold"};
         font-style: ${o.italic&&"italic"};
