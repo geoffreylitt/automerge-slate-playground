@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "node build.js",
+    "build-automerge": "cd node_modules/automerge && npm install && npm run build",
+    "build": "yarn run build-automerge && node build.js",
     "start": "node build.js -w"
   },
   "author": "",
