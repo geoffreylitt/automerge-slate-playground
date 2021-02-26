@@ -37,6 +37,18 @@ type RichTextEditorProps = {
 export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) {
   const [selection, setSelection] = useState<Range>(null)
 
+  const toggleMark = useCallback((doc: RichTextDoc, editor: Editor, format: TextFormat) => {
+    const isActive = isMarkActive(editor, format)
+    const span = automergeSpanFromSlateRange(doc.content, editor.selection)
+    if (isActive) {
+      changeDoc((doc: RichTextDoc) => doc.formatting.push({ span, format, remove: true }))
+      // Editor.removeMark(editor, format)
+    } else {
+      changeDoc((doc: RichTextDoc) => doc.formatting.push({ span, format }))
+      // Editor.addMark(editor, format, true)
+    }
+  }, [doc])
+
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
   const content:Node[] = [
@@ -59,9 +71,12 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
     });
   }, []);
 
+  if(editor.selection) {
+    console.log(Editor.node(editor, editor.selection))
+  }
+
   const decorate = useCallback(
     ([node, path]) => {
-      console.log("decoratin")
       const ranges: Range[] = [];
 
       if (!Text.isText(node)) {
@@ -70,7 +85,6 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
 
       // Add formatting decorations
       for (const formatSpan of doc.formatting) {
-        console.log({formatSpan, range: slateRangeFromAutomergeSpan(formatSpan.span)})
         ranges.push({
           ...slateRangeFromAutomergeSpan(formatSpan.span),
           [formatSpan.format]: true
@@ -129,24 +143,9 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
   );
 }
 
-const toggleMark = (doc: RichTextDoc, editor: Editor, format: TextFormat) => {
-  console.log("toggle", format)
-  const isActive = isMarkActive(editor, format)
-  const span = automergeSpanFromSlateRange(doc.content, editor.selection)
-  if (isActive) {
-    console.log("remove", editor.selection, automergeSpanFromSlateRange(doc.content, editor.selection))
-    doc.formatting.push({ span, format })
-    // Editor.removeMark(editor, format)
-  } else {
-    console.log("add", editor.selection, automergeSpanFromSlateRange(doc.content, editor.selection))
-    doc.formatting.push({ format, span })
-    // Editor.addMark(editor, format, true)
-  }
-  console.log({doc})
-}
-
 const isMarkActive = (editor, format) => {
   const marks = Editor.marks(editor)
+  console.log({marks})
   return marks ? marks[format] === true : false
 }
 

@@ -21,7 +21,7 @@ export type MarkdownDoc = {
 
 export type RichTextDoc = {
   content: Automerge.Text;
-  formatting: { span: AutomergeSpan, type: TextFormat }[]
+  formatting: { span: AutomergeSpan, format: TextFormat, remove?: boolean }[]
 }
 
 // convert an Automerge Span to a Slate Range.
