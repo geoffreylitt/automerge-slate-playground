@@ -20,6 +20,7 @@
   "dependencies": {
     "@emotion/react": "^11.1.1",
     "automerge": "https://github.com/automerge/automerge.git#cursors-v2",
+    "is-hotkey": "^0.2.0",
     "lorem-ipsum": "^2.0.3",
     "prismjs": "^1.22.0",
     "react": "^17.0.1",

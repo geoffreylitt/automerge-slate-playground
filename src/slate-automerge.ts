@@ -6,6 +6,8 @@ export type AutomergeSpan = {
   end: Automerge.Cursor;
 }
 
+export type TextFormat = "bold" | "italic" | "underline"
+
 export type Comment = {
   id: string;
   range: AutomergeSpan;
@@ -15,6 +17,11 @@ export type Comment = {
 export type MarkdownDoc = {
   content: Automerge.Text;
   comments: Comment[];
+}
+
+export type RichTextDoc = {
+  content: Automerge.Text;
+  formatting: { span: AutomergeSpan, type: TextFormat }[]
 }
 
 // convert an Automerge Span to a Slate Range.
