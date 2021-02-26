@@ -19,7 +19,7 @@ This is some text. It supports _italic_ and **bolding**. And lists, too:
 Try highlighting a region and clicking Comment.
 
 Even as you edit the doc, the comment will stay attached to the correct portion of the text.`),
-  formatting: []
+  formatSpans: []
 }
 
 const App = () => {

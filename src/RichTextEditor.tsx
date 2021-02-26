@@ -4,14 +4,12 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import isHotkey from 'is-hotkey'
+import every from 'lodash/every'
 
 import { createEditor, Text, Range, Point, Node, Operation, Editor } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
-import Prism, { Token } from "prismjs";
-import { loremIpsum } from "lorem-ipsum";
-import { v4 as uuidv4 } from 'uuid';
-import { RichTextDoc, Comment, slateRangeFromAutomergeSpan, automergeSpanFromSlateRange, TextFormat } from "./slate-automerge";
+import { RichTextDoc, Comment, slateRangeFromAutomergeSpan, automergeSpanFromSlateRange, TextFormat, flattenedFormatting } from "./slate-automerge";
 
 const HOTKEYS = {
   'mod+b': 'bold',
@@ -36,15 +34,20 @@ type RichTextEditorProps = {
 
 export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) {
   const [selection, setSelection] = useState<Range>(null)
+  const flatFormatting = flattenedFormatting(doc)
 
   const toggleMark = useCallback((doc: RichTextDoc, editor: Editor, format: TextFormat) => {
-    const isActive = isMarkActive(editor, format)
+    const selectedArray = flatFormatting.slice(Range.start(editor.selection).offset, Range.end(editor.selection).offset)
+    const isActive = every(selectedArray, c => c && c[format] === true)
+
+    console.log({ format, isActive, selectedArray, selection: editor.selection })
+
     const span = automergeSpanFromSlateRange(doc.content, editor.selection)
     if (isActive) {
-      changeDoc((doc: RichTextDoc) => doc.formatting.push({ span, format, remove: true }))
+      changeDoc((doc: RichTextDoc) => doc.formatSpans.push({ span, format, remove: true }))
       // Editor.removeMark(editor, format)
     } else {
-      changeDoc((doc: RichTextDoc) => doc.formatting.push({ span, format }))
+      changeDoc((doc: RichTextDoc) => doc.formatSpans.push({ span, format }))
       // Editor.addMark(editor, format, true)
     }
   }, [doc])
@@ -84,16 +87,16 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
       }
 
       // Add formatting decorations
-      for (const formatSpan of doc.formatting) {
+      for (const formatSpan of doc.formatSpans) {
         ranges.push({
           ...slateRangeFromAutomergeSpan(formatSpan.span),
-          [formatSpan.format]: true
+          [formatSpan.format]: formatSpan.remove ? false : true
         });
       }
 
       return ranges;
     },
-    [doc.content, doc.formatting]
+    [doc.content, doc.formatSpans]
   );
 
   return (
