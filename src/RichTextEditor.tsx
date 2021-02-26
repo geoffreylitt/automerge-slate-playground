@@ -63,6 +63,9 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
   const renderLeaf = useCallback((props) => <Leaf {...props} />, [])
 
   const editor = useMemo(() => {
+    // Typically with Slate you would use an onChange function to update state.
+    // But that doesn't work for Automerge because we need an op-based view.
+    // We hook into text insert/remove events and propagate to Automerge accordingly.
     return withOpHandler(withHistory(withReact(createEditor())), (op: Operation) => {
       console.log("applying Slate operation", op)
       if (op.type === 'insert_text') {
@@ -78,6 +81,8 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
     console.log(Editor.node(editor, editor.selection))
   }
 
+  // Apply bold/italic decorations to the document
+  // based on the formatting spans
   const decorate = useCallback(
     ([node, path]) => {
       const ranges: Range[] = [];
@@ -86,7 +91,6 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
         return ranges;
       }
 
-      // Add formatting decorations
       for (const formatSpan of doc.formatSpans) {
         ranges.push({
           ...slateRangeFromAutomergeSpan(formatSpan.span),
@@ -197,57 +201,3 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
     </span>
   );
 };
-
-type CommentsProps = {
-  comments: Comment[];
-  activeCommentId: string;
-  setActiveCommentId: any;
-};
-
-function Comments({
-  comments,
-  activeCommentId,
-  setActiveCommentId,
-}: CommentsProps) {
-  // todo: sort the comments
-
-  return (
-    <div className="comments-list">
-      {comments.map((comment) => {
-        // If a comment's start and end index are the same,
-        // the span it pointed to has been removed from the doc
-        if(comment.range.start.index === comment.range.end.index) {
-          return null
-        }
-        return (
-          <div
-            key={comment.id}
-            css={css`
-              border: solid thin #ddd;
-              border-radius: 10px;
-              padding: 10px;
-              margin: 10px;
-              cursor: pointer;
-
-              &:hover {
-                border: solid thin #bbb;
-              }
-
-              ${activeCommentId === comment.id &&
-              `border: solid thin #bbb;
-              box-shadow: 0px 0px 5px 3px #ddd;`}
-            `}
-            onClick={() => setActiveCommentId(comment.id)}
-          >
-            {comment.text}
-            <div css={css`margin-top: 5px; font-size: 12px;`}>
-            (Text index: {comment.range.start.index} to {comment.range.end.index})
-            </div>
-
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
