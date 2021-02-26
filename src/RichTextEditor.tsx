@@ -101,47 +101,35 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
 
   return (
     <div css={css`
-      padding: 10px;
-      display: grid;
-      grid-template-columns: 70% 30%;
-      grid-template-rows: 30px auto;
-      grid-template-areas:
-        "toolbar toolbar"
-        "editor comments";
-      column-gap: 10px;
-      row-gap: 10px;
+      border: solid thin #ddd;
+      padding: 5px;
+      grid-area: editor;
     `}>
-      <div css={css`
-        border: solid thin #ddd;
-        padding: 5px;
-        grid-area: editor;
-      `}>
-        <Slate editor={editor} value={content} onChange={() => {}}>
-          <Editable
-            decorate={decorate}
-            renderLeaf={renderLeaf}
-            placeholder="Write some markdown here!"
-            onSelect={() => {
-              setSelection(editor.selection);
-            }}
-            // We want to keep the whole doc as one giant node;
-            // block Enter key from creating a new node here.
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                editor.insertText("\n");
+      <Slate editor={editor} value={content} onChange={() => {}}>
+        <Editable
+          decorate={decorate}
+          renderLeaf={renderLeaf}
+          placeholder="Write some markdown here!"
+          onSelect={() => {
+            setSelection(editor.selection);
+          }}
+          // We want to keep the whole doc as one giant node;
+          // block Enter key from creating a new node here.
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              editor.insertText("\n");
+            }
+            for (const hotkey in HOTKEYS) {
+              if (isHotkey(hotkey, event as any)) {
+                event.preventDefault()
+                const mark = HOTKEYS[hotkey]
+                toggleMark(doc, editor, mark)
               }
-              for (const hotkey in HOTKEYS) {
-                if (isHotkey(hotkey, event as any)) {
-                  event.preventDefault()
-                  const mark = HOTKEYS[hotkey]
-                  toggleMark(doc, editor, mark)
-                }
-              }
-            }}
-          />
-        </Slate>
-      </div>
+            }
+          }}
+        />
+      </Slate>
     </div>
   );
 }

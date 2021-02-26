@@ -7,18 +7,12 @@ import Automerge from 'automerge'
 import { useAutomergeDoc } from './hooks'
 import { MarkdownDoc, RichTextDoc } from './slate-automerge'
 import RichTextEditor from './RichTextEditor';
+import ReactJson from 'react-json-view'
 
 const initialDoc:RichTextDoc = {
-  content: new Automerge.Text(`# Slate Automerge
-This is some text. It supports _italic_ and **bolding**. And lists, too:
+  content: new Automerge.Text(`Slate Automerge
 
-- a thing
-- another thing
-- yet another thing
-
-Try highlighting a region and clicking Comment.
-
-Even as you edit the doc, the comment will stay attached to the correct portion of the text.`),
+This is some text. Formatting can be applied with cmd+b and cmd+i.`),
   formatSpans: []
 }
 
@@ -35,7 +29,7 @@ const App = () => {
         column-gap: 20px;
         row-gap: 10px;
         font-family: "Fira Sans", sans-serif;
-        width: 100vw;
+        width: 90vw;
         height: 100vh;
         box-sizing: border-box;
       `}>
@@ -48,7 +42,15 @@ const App = () => {
           <RichTextEditor doc={doc} changeDoc={changeDoc} />
         </div>
         <div css={css`grid-area: app-right; overflow: hidden;`}>
-          {/* todo: add a second client in this box */}
+          <ReactJson src={{
+            content: doc.content.toString(),
+            formatSpans: doc.formatSpans.map(span => ({
+              start: span.span.start.index,
+              end: span.span.end.index,
+              format: span.format,
+              remove: !!span.remove
+            }))
+          }} collapsed={false} collapseStringsAfterLength={280} displayDataTypes={false} displayObjectSize={false} />
         </div>
       </div>
 }
