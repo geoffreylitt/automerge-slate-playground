@@ -15,7 +15,7 @@ export default function MarkdownDemo() {
 
 This is a Markdown doc with _rich formatting_ and **formatting preview**.
 
-Try adding a comment to the doc!`),
+Try adding a comment to the doc! It will stay attached as the doc changes.`),
     comments: []
   })
 
