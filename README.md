@@ -2,6 +2,8 @@
 
 ![](./automerge-comments.gif)
 
+[Try it out](https://automerge-slate-playground.netlify.app/)
+
 A toy demo integration of [Automerge](https://github.com/automerge/automerge) with [Slate](https://www.slatejs.org/examples)
 
 This builds on the new Automerge Cursors functionality to support adding annotations to text. Currently includes two demos:
