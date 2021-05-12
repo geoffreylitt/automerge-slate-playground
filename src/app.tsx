@@ -3,31 +3,19 @@
 
 import { jsx, css } from '@emotion/react'
 import { render } from "react-dom";
-import Automerge from 'automerge'
-import { useAutomergeDoc } from './hooks'
-import { MarkdownDoc, RichTextDoc } from './slate-automerge'
-import RichTextEditor from './RichTextEditor';
-import ReactJson from 'react-json-view'
 import { useState } from 'react';
 import RichTextDemo from './RichTextDemo';
 import MarkdownDemo from './MarkdownDemo';
-
-const demoData = {
-  "markdown": {
-    content: new Automerge.Text(`# A markdown doc
-
-    This doc has some _inline formatting_. Try *adding a comment*!`),
-    comments: []
-  }
-}
+import ParagraphsDemo from './ParagraphsDemo';
 
 const demoComponents = {
   "richtext": <RichTextDemo />,
-  "markdown": <MarkdownDemo />
+  "markdown": <MarkdownDemo />,
+  "paragraphs": <ParagraphsDemo />
 }
 
 const App = () => {
-  const [demo, setDemo] = useState("richtext")
+  const [demo, setDemo] = useState("paragraphs")
 
   return <div css={css`font-family: "Fira Sans", sans-serif;`}>
           <div css={css`margin-bottom: 20px;`}>
