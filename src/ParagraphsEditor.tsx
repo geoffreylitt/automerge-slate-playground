@@ -6,7 +6,7 @@ import { jsx, css } from "@emotion/react";
 import isHotkey from 'is-hotkey'
 import every from 'lodash/every'
 
-import { createEditor, Text, Range, Point, Node, Operation, Editor } from "slate";
+import { createEditor, Text, Range, Point, Node, Operation, Editor, Path } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
 import { RichTextDoc, Comment, slateRangeFromAutomergeSpan, automergeSpanFromSlateRange, TextFormat, flattenedFormatting } from "./slate-automerge";
@@ -52,13 +52,39 @@ export default function ParagraphsEditor({ doc, changeDoc }: RichTextEditorProps
   const editor = useMemo(() => {
     // Typically with Slate you would use an onChange function to update state.
     // But that doesn't work for Automerge because we need an op-based view.
-    // We hook into text insert/remove events and propagate to Automerge accordingly.
+    // We hook into Slate ops and propagate to Automerge accordingly.
     return withOpHandler(withHistory(withReact(createEditor())), (op: Operation, editor: Editor) => {
       console.log("applying Slate operation", op)
       if (op.type === 'insert_text') {
         changeDoc((doc: RichTextDoc) => doc.content.insertAt(op.offset, op.text))
       }
       if (op.type === 'split_node') {
+        // OK, so splitting nodes is a bit weird.
+        // Our document contains paragraph nodes which in turn contain a single text node.
+        // (in theory, each paragraph node could contain more text nodes;
+        // and when we add inline formatting it probably will contain more,
+        // but for now, we only handle one text node per paragraph.)
+
+        // When we split a paragraph, Slate generates two split node ops:
+        // 1) split the text node:
+        // { path: [<paragraph_index>, 0], <-- Address the first text node
+        //   position: <char_index> }      <-- And split it at the right index
+        //
+        // Now our paragraph node contains two text nodes, but it's still one paragraph.
+        //
+        // 2) Split the _paragraph_ node: { path: [<paragraph_index>], position: 1 }
+        //
+        // This splits the paragraph between the two text nodes;
+        // we end up with 2 paragraph nodes that each contain a single text node.
+        //
+        // The thing is, this is all really a single node split;
+        // we only want to add a single newline character to our document.
+        // So, long story short, we ignore the second split operation with a guard clause,
+        // and only process the first one and change the doc accordingly.
+        if(op.path.length < 2) {
+          return
+        }
+
         editor.selection = {
           anchor: { path: [0, 0], offset: 0 },
           focus: { path: [0, 0], offset: 0 },
