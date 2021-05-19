@@ -41,7 +41,7 @@ export default function ParagraphsEditor({ doc, changeDoc, content }: Paragraphs
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
 
-  console.log({ content })
+  console.log({ content }) 
 
   const renderElement = useCallback(props => <Element {...props} />, [])
 

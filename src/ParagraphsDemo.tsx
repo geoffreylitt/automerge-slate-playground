@@ -11,7 +11,7 @@ import { useState } from 'react'
 
 export default function ParagraphsDemo() {
   const [doc, changeDoc] = useAutomergeDoc<any>({
-    content: new Automerge.Text(`This is a doc with paragraphs\nSee? Two paragraphs!\n`),
+    content: new Automerge.Text(`This is a doc with multiple paragraphs\nEach paragraph is a tree node in Slate\nBut the paragraphs are newline-delimited in Automerge`),
   })
 
   const content:Node[] = doc.content.toString().split("\n").map(paragraph => ({
