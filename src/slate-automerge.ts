@@ -51,7 +51,7 @@ export function applySlateOp(
   doc: RichTextDoc,
   changeDoc: (callback: (doc: RichTextDoc) => void) => void
 ): void {
-  console.log("applying op", op)
+  // console.log("applying op", op)
   if (op.type === 'insert_text') {
     changeDoc(d => d.content.insertAt(op.offset, op.text))
   }
