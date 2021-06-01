@@ -50,13 +50,15 @@ export function applySlateOp(
   doc: RichTextDoc,
   changeDoc: (callback: (doc: RichTextDoc) => void) => void
 ): void {
-  console.log("inside op handler", { op, doc })
+  console.log("applying op", op)
   if (op.type === 'insert_text') {
     changeDoc(d => d.content.insertAt(op.offset, op.text))
   }
   if (op.type === 'remove_text') {
     changeDoc(d => d.content.deleteAt(op.offset, op.text.length))
   }
+  // "Toggle" should add formatting iff it's not already applied to all characters in selection.
+  // (TODO: should this be handled in the editor UI? Or in this translation layer?)
   if (op.type === 'toggle_inline_formatting') {
     const flatFormatting = flattenedFormatting(doc)
     const selectedArray = flatFormatting.slice(Range.start(op.selection).offset, Range.end(op.selection).offset)
@@ -67,15 +69,13 @@ export function applySlateOp(
       // Note: In normal Slate usage you'd put something like this:
       // Editor.removeMark(editor, format)
       // which would split up tree nodes and set properties on the newly created node.
-      // Instead of doing this, we record the format span in the annotations representation.
+      // Instead of doing this, we record the format span in the annotations representation,
+      // and we avoid splitting nodes.
     } else {
       changeDoc(d => d.formatSpans.push({ span, format: op.format }))
       // Same as above; don't do Slate's typical process here
       // Editor.addMark(editor, format, true)
     }
-  }
-  else {
-    console.log("ignored op of unknown type")
   }
 }
 
@@ -105,8 +105,8 @@ export function automergeSpanFromSlateRange(text: Automerge.Text, range: Range):
 
 // Returns an array of objects, one per character in the doc,
 // representing the formatting applied to that character.
-// Useful for
-export function flattenedFormatting(doc: RichTextDoc) {
+// Useful for figuring out how a toggle operation should behave
+function flattenedFormatting(doc: RichTextDoc) {
   const chars: { [key: string]: boolean }[] = range(doc.content.length).map(c => {})
   for(const formatSpan of doc.formatSpans) {
     let start: number, end: number;

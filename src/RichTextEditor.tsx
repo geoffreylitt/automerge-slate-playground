@@ -8,7 +8,7 @@ import isHotkey from 'is-hotkey'
 import { createEditor, Text, Range, Node, Operation, Editor } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
-import { applySlateOp, automergeSpanFromSlateRange, flattenedFormatting, RichTextDoc, slateRangeFromAutomergeSpan, TextFormat } from "./slate-automerge";
+import { applySlateOp, ExtendedSlateOperation, RichTextDoc, slateRangeFromAutomergeSpan, TextFormat } from "./slate-automerge";
 
 const HOTKEYS = {
   'mod+b': 'bold',
@@ -34,11 +34,8 @@ type RichTextEditorProps = {
 export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) {
   const [selection, setSelection] = useState<Range>(null)
   const toggleMark = useCallback((doc: RichTextDoc, editor: Editor, format: TextFormat) => {
-    applySlateOp(
-      { type: "toggle_inline_formatting", selection: editor.selection, format },
-      doc,
-      changeDoc
-    )
+    const op: ExtendedSlateOperation = { type: "toggle_inline_formatting", selection: editor.selection, format }
+    applySlateOp(op, doc, changeDoc)
   }, [doc])
 
   // We model the document for Slate as a single text node.

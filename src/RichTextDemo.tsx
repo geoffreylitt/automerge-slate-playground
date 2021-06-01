@@ -27,7 +27,7 @@ Overlapping spans apply correctly, and spans stay attached as the text changes.`
     column-gap: 50px;
 
     width: 90vw;
-    height: 100%;
+    height: 80%;
     box-sizing: border-box;
   `}>
     <div css={css`grid-area: app-left; overflow: hidden;`}>
@@ -35,16 +35,18 @@ Overlapping spans apply correctly, and spans stay attached as the text changes.`
       <RichTextEditor doc={doc} changeDoc={changeDoc} />
     </div>
     <div css={css`grid-area: app-right; overflow: hidden;`}>
-    <div css={css`margin-bottom: 10px; font-size: 14px; text-transform: uppercase; color: #aaa;`}>Automerge doc state</div>
-      <ReactJson src={{
-        content: doc.content.toString(),
-        formatSpans: doc.formatSpans.map(span => ({
-          start: span.span.start.index,
-          end: span.span.end.index,
-          format: span.format,
-          remove: !!span.remove
-        }))
-      }} collapsed={false} collapseStringsAfterLength={280} displayDataTypes={false} displayObjectSize={false} />
+      <div css={css`margin-bottom: 10px; font-size: 14px; text-transform: uppercase; color: #aaa;`}>Automerge doc state</div>
+      <div css={css`height: 100%; overflow-y: scroll; `}>
+        <ReactJson src={{
+          content: doc.content.toString(),
+          formatSpans: doc.formatSpans.map(span => ({
+            start: span.span.start.index,
+            end: span.span.end.index,
+            format: span.format,
+            remove: !!span.remove
+          }))
+        }} collapsed={false} collapseStringsAfterLength={280} displayDataTypes={false} displayObjectSize={false} />
+      </div>
     </div>
   </div>
 }
