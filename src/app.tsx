@@ -15,7 +15,7 @@ const demoComponents = {
 }
 
 const App = () => {
-  const [demo, setDemo] = useState("paragraphs")
+  const [demo, setDemo] = useState("richtext")
 
   return <div css={css`font-family: "Fira Sans", sans-serif;`}>
           <div css={css`margin-bottom: 20px;`}>

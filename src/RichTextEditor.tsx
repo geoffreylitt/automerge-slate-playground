@@ -1,15 +1,14 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
 
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import isHotkey from 'is-hotkey'
-import every from 'lodash/every'
 
-import { createEditor, Text, Range, Point, Node, Operation, Editor } from "slate";
+import { createEditor, Text, Range, Node, Operation, Editor } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
-import { RichTextDoc, Comment, slateRangeFromAutomergeSpan, automergeSpanFromSlateRange, TextFormat, flattenedFormatting } from "./slate-automerge";
+import { applySlateOp, automergeSpanFromSlateRange, flattenedFormatting, RichTextDoc, slateRangeFromAutomergeSpan, TextFormat } from "./slate-automerge";
 
 const HOTKEYS = {
   'mod+b': 'bold',
@@ -34,22 +33,13 @@ type RichTextEditorProps = {
 
 export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) {
   const [selection, setSelection] = useState<Range>(null)
-  const flatFormatting = flattenedFormatting(doc)
-
   const toggleMark = useCallback((doc: RichTextDoc, editor: Editor, format: TextFormat) => {
-    const selectedArray = flatFormatting.slice(Range.start(editor.selection).offset, Range.end(editor.selection).offset)
-    const isActive = every(selectedArray, c => c && c[format] === true)
-
-    console.log({ format, isActive, selectedArray, selection: editor.selection })
-
-    const span = automergeSpanFromSlateRange(doc.content, editor.selection)
-    if (isActive) {
-      changeDoc((doc: RichTextDoc) => doc.formatSpans.push({ span, format, remove: true }))
-      // Editor.removeMark(editor, format)
-    } else {
-      changeDoc((doc: RichTextDoc) => doc.formatSpans.push({ span, format }))
-      // Editor.addMark(editor, format, true)
-    }
+    console.log("toggling mark")
+    changeDoc((doc: RichTextDoc) => {
+      // todo: how to best extend Slate's Operation type to accommodate our new ops?
+      applySlateOp({ type: "toggle_inline_formatting", selection: editor.selection, format }, doc)
+      console.log("done applying")
+    })
   }, [doc])
 
   // We model the document for Slate as a single text node.
@@ -67,19 +57,9 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
     // But that doesn't work for Automerge because we need an op-based view.
     // We hook into text insert/remove events and propagate to Automerge accordingly.
     return withOpHandler(withHistory(withReact(createEditor())), (op: Operation) => {
-      console.log("applying Slate operation", op)
-      if (op.type === 'insert_text') {
-        changeDoc((doc: RichTextDoc) => doc.content.insertAt(op.offset, op.text))
-      }
-      if (op.type === 'remove_text') {
-        changeDoc((doc: RichTextDoc) => doc.content.deleteAt(op.offset, op.text.length))
-      }
+      changeDoc((doc: RichTextDoc) => applySlateOp(op, doc))
     });
   }, []);
-
-  if(editor.selection) {
-    console.log(Editor.node(editor, editor.selection))
-  }
 
   // Apply bold/italic decorations to the document
   // based on the formatting spans
@@ -140,7 +120,6 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
 
 const isMarkActive = (editor, format) => {
   const marks = Editor.marks(editor)
-  console.log({marks})
   return marks ? marks[format] === true : false
 }
 
