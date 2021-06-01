@@ -37,16 +37,25 @@ type ToggleInlineFormatOperation = {
 // (Todo: probably eventually makes sense to fully customize our operation types)
 export type ExtendedSlateOperation = Operation | ToggleInlineFormatOperation
 
+/**
+ * Applies an operation from the Slate editor to the Automerge doc storing the content.
+ * (Because of how Automerge handles reads/writes separately,
+ * we pass in a readable copy and a function to facilitate writes)
+ * @param op - the operation to apply
+ * @param doc - a readable version of the Automerge document
+ * @param changeDoc - to write to the doc, pass a callback into changeDoc
+ */
 export function applySlateOp(
   op: ExtendedSlateOperation,
-  doc: RichTextDoc
+  doc: RichTextDoc,
+  changeDoc: (callback: (doc: RichTextDoc) => void) => void
 ): void {
   console.log("inside op handler", { op, doc })
   if (op.type === 'insert_text') {
-    doc.content.insertAt(op.offset, op.text)
+    changeDoc(d => d.content.insertAt(op.offset, op.text))
   }
   if (op.type === 'remove_text') {
-    doc.content.deleteAt(op.offset, op.text.length)
+    changeDoc(d => d.content.deleteAt(op.offset, op.text.length))
   }
   if (op.type === 'toggle_inline_formatting') {
     const flatFormatting = flattenedFormatting(doc)
@@ -54,15 +63,13 @@ export function applySlateOp(
     const isActive = every(selectedArray, c => c && c[op.format] === true)
     const span = automergeSpanFromSlateRange(doc.content, op.selection)
     if (isActive) {
-      console.log("active!")
-      doc.formatSpans.push({ span, format: op.format, remove: true })
+      changeDoc(d => d.formatSpans.push({ span, format: op.format, remove: true }))
       // Note: In normal Slate usage you'd put something like this:
       // Editor.removeMark(editor, format)
       // which would split up tree nodes and set properties on the newly created node.
       // Instead of doing this, we record the format span in the annotations representation.
     } else {
-      console.log("inactive!")
-      doc.formatSpans.push({ span, format: op.format })
+      changeDoc(d => d.formatSpans.push({ span, format: op.format }))
       // Same as above; don't do Slate's typical process here
       // Editor.addMark(editor, format, true)
     }

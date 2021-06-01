@@ -34,12 +34,11 @@ type RichTextEditorProps = {
 export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) {
   const [selection, setSelection] = useState<Range>(null)
   const toggleMark = useCallback((doc: RichTextDoc, editor: Editor, format: TextFormat) => {
-    console.log("toggling mark")
-    changeDoc((doc: RichTextDoc) => {
-      // todo: how to best extend Slate's Operation type to accommodate our new ops?
-      applySlateOp({ type: "toggle_inline_formatting", selection: editor.selection, format }, doc)
-      console.log("done applying")
-    })
+    applySlateOp(
+      { type: "toggle_inline_formatting", selection: editor.selection, format },
+      doc,
+      changeDoc
+    )
   }, [doc])
 
   // We model the document for Slate as a single text node.
@@ -57,7 +56,7 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
     // But that doesn't work for Automerge because we need an op-based view.
     // We hook into text insert/remove events and propagate to Automerge accordingly.
     return withOpHandler(withHistory(withReact(createEditor())), (op: Operation) => {
-      changeDoc((doc: RichTextDoc) => applySlateOp(op, doc))
+      applySlateOp(op, doc, changeDoc)
     });
   }, []);
 
