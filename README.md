@@ -26,6 +26,12 @@ Manually build automerge dependency loaded from github (can probably remove this
 
 Open [localhost:8181](http://localhost:8181) to see the app
 
+# Run tests
+
+`yarn global add mocha ts-mocha`
+
+`yarn run test`
+
 # How it works
 
 - Automerge doc is the source of truth. The entire text content is stored as a single Automerge.Text string. Comments and rich text formatting are stored as an array of annotations, per the [OAFS](https://github.com/automerge/automerge/issues/193) idea; also similar to [atjson](https://github.com/CondeNast/atjson).

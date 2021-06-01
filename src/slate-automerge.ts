@@ -4,6 +4,7 @@ import range from 'lodash/range'
 import every from 'lodash/every'
 
 export type AutomergeSpan = {
+  // todo: add type exports for this to the automerge cursors branch
   start: Automerge.Cursor;
   end: Automerge.Cursor;
 }
