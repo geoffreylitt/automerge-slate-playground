@@ -1,7 +1,8 @@
 import Automerge from 'automerge'
-import { Operation, Range, SelectionOperation } from 'slate'
+import { Editor, Operation, Range, SelectionOperation, Point } from 'slate'
 import range from 'lodash/range'
 import every from 'lodash/every'
+import { createDraft, finishDraft, isDraft } from 'immer'
 
 export type AutomergeSpan = {
   // todo: add type exports for this to the automerge cursors branch
@@ -49,35 +50,103 @@ export type ExtendedSlateOperation = Operation | ToggleInlineFormatOperation
 export function applySlateOp(
   op: ExtendedSlateOperation,
   doc: RichTextDoc,
-  changeDoc: (callback: (doc: RichTextDoc) => void) => void
+  changeDoc: (callback: (doc: RichTextDoc) => void) => void,
+  editor: Editor
 ): void {
-  // console.log("applying op", op)
-  if (op.type === 'insert_text') {
-    changeDoc(d => d.content.insertAt(op.offset, op.text))
-  }
-  if (op.type === 'remove_text') {
-    changeDoc(d => d.content.deleteAt(op.offset, op.text.length))
-  }
-  // "Toggle" should add formatting iff it's not already applied to all characters in selection.
-  // (TODO: should this be handled in the editor UI? Or in this translation layer?)
-  if (op.type === 'toggle_inline_formatting') {
-    const flatFormatting = flattenedFormatting(doc)
-    const selectedArray = flatFormatting.slice(Range.start(op.selection).offset, Range.end(op.selection).offset)
-    const isActive = every(selectedArray, c => c && c[op.format] === true)
-    const span = automergeSpanFromSlateRange(doc.content, op.selection)
-    if (isActive) {
-      changeDoc(d => d.formatSpans.push({ span, format: op.format, remove: true }))
-      // Note: In normal Slate usage you'd put something like this:
-      // Editor.removeMark(editor, format)
-      // which would split up tree nodes and set properties on the newly created node.
-      // Instead of doing this, we record the format span in the annotations representation,
-      // and we avoid splitting nodes.
-    } else {
-      changeDoc(d => d.formatSpans.push({ span, format: op.format }))
-      // Same as above; don't do Slate's typical process here
-      // Editor.addMark(editor, format, true)
+  let selection = editor.selection && createDraft(editor.selection)
+
+  switch(op.type) {
+    // Parts of this code are copied from general.ts in the original slate library.
+    // In general, the pattern is:
+    // 1) Make text updates to the Automerge doc
+    // 2) Make selection updates directly to the Slate editor
+
+    case 'insert_text': {
+      changeDoc(d => d.content.insertAt(op.offset, op.text))
+
+      // move the cursor over one
+      if (selection) {
+        for (const [point, key] of Range.points(selection)) {
+          selection[key] = Point.transform(point, op)!
+        }
+      }
+
+      break
+    }
+
+    case 'remove_text': {
+      changeDoc(d => d.content.deleteAt(op.offset, op.text.length))
+
+      if (selection) {
+        for (const [point, key] of Range.points(selection)) {
+          selection[key] = Point.transform(point, op)!
+        }
+      }
+
+      break
+    }
+
+    case 'toggle_inline_formatting': {
+      const flatFormatting = flattenedFormatting(doc)
+      const selectedArray = flatFormatting.slice(Range.start(op.selection).offset, Range.end(op.selection).offset)
+      const isActive = every(selectedArray, c => c && c[op.format] === true)
+      const span = automergeSpanFromSlateRange(doc.content, op.selection)
+      if (isActive) {
+        changeDoc(d => d.formatSpans.push({ span, format: op.format, remove: true }))
+        // Note: In normal Slate usage you'd put something like this:
+        // Editor.removeMark(editor, format)
+        // which would split up tree nodes and set properties on the newly created node.
+        // Instead of doing this, we record the format span in the annotations representation,
+        // and we avoid splitting nodes.
+      } else {
+        changeDoc(d => d.formatSpans.push({ span, format: op.format }))
+        // Same as above; don't do Slate's typical process here
+        // Editor.addMark(editor, format, true)
+      }
+
+      break
+    }
+
+    case 'set_selection': {
+      const { newProperties } = op
+
+      if (newProperties == null) {
+        selection = newProperties
+      } else {
+        if (selection == null) {
+          if (!Range.isRange(newProperties)) {
+            throw new Error(
+              `Cannot apply an incomplete "set_selection" operation properties ${JSON.stringify(
+                newProperties
+              )} when there is no current selection.`
+            )
+          }
+
+          selection = { ...newProperties }
+        }
+
+        for (const key in newProperties) {
+          const value = newProperties[key]
+
+          if (value == null) {
+            if (key === 'anchor' || key === 'focus') {
+              throw new Error(`Cannot remove the "${key}" selection property`)
+            }
+
+            delete selection[key]
+          } else {
+            selection[key] = value
+          }
+        }
+      }
+
+      break
     }
   }
+
+  editor.selection = isDraft(selection)
+  ? (finishDraft(selection) as Range)
+  : selection
 }
 
 // convert an Automerge Span to a Slate Range.
@@ -107,6 +176,9 @@ export function automergeSpanFromSlateRange(text: Automerge.Text, range: Range):
 // Returns an array of objects, one per character in the doc,
 // representing the formatting applied to that character.
 // Useful for figuring out how a toggle operation should behave
+
+// todo: make this faster? could subset the list of spans
+// todo: think about merging overlapping spans?
 function flattenedFormatting(doc: RichTextDoc) {
   const chars: { [key: string]: boolean }[] = range(doc.content.length).map(c => {})
   for(const formatSpan of doc.formatSpans) {

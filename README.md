@@ -19,8 +19,7 @@ A next demo to add might be broader rich text support for things like lists, blo
 
 Manually build automerge dependency loaded from github (can probably remove this step by switching to official build):
 
-`cd node_modules/automerge`
-`yarn && yarn run build`
+`yarn run build-automerge`
 
 `yarn start`
 

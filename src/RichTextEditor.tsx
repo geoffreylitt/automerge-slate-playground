@@ -17,12 +17,8 @@ const HOTKEYS = {
   'mod+`': 'code',
 }
 
-const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
-  const { apply } = editor;
-  editor.apply = (op) => {
-    apply(op)
-    callback(op)
-  }
+const withOpHandler = (editor: Editor, callback: (op: Operation, editor: Editor) => void) => {
+  editor.apply = (op) => callback(op, editor)
   return editor;
 }
 
@@ -35,7 +31,7 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
   const [selection, setSelection] = useState<Range>(null)
   const toggleMark = useCallback((doc: RichTextDoc, editor: Editor, format: TextFormat) => {
     const op: ExtendedSlateOperation = { type: "toggle_inline_formatting", selection: editor.selection, format }
-    applySlateOp(op, doc, changeDoc)
+    applySlateOp(op, doc, changeDoc, editor)
   }, [doc])
 
   // We model the document for Slate as a single text node.
@@ -52,8 +48,8 @@ export default function RichTextEditor({ doc, changeDoc }: RichTextEditorProps) 
     // Typically with Slate you would use an onChange function to update state.
     // But that doesn't work for Automerge because we need an op-based view.
     // We hook into text insert/remove events and propagate to Automerge accordingly.
-    return withOpHandler(withHistory(withReact(createEditor())), (op: Operation) => {
-      applySlateOp(op, doc, changeDoc)
+    return withOpHandler(withHistory(withReact(createEditor())), (op: Operation, editor: Editor) => {
+      applySlateOp(op, doc, changeDoc, editor)
     });
   }, []);
 
