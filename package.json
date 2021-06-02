@@ -1,5 +1,5 @@
 {
-  "name": "automerge-slate-playground",
+  "name": "automerge-markdown-comments",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -26,15 +26,14 @@
   "dependencies": {
     "@emotion/react": "^11.1.1",
     "automerge": "https://github.com/automerge/automerge.git#cursors-v2",
-    "immer": "^9.0.2",
     "is-hotkey": "^0.2.0",
     "lorem-ipsum": "^2.0.3",
     "prismjs": "^1.22.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-json-view": "^1.21.1",
-    "slate": "file:../slate/packages/slate",
-    "slate-history": "file:../slate/packages/slate-history",
-    "slate-react": "file:../slate/packages/slate-react"
+    "slate": "^0.59.0",
+    "slate-history": "^0.59.0",
+    "slate-react": "^0.59.0"
   }
 }
