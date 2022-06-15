@@ -25,6 +25,7 @@ import {
   automergeSpanFromSlateRange,
   getTextAtAutomergeSpan,
 } from "./slate-automerge";
+import { normal } from "color-blend";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -44,18 +45,70 @@ type MarkdownEditorProps = {
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
 };
 
-export default function MarkdownEditor({
-  doc,
-  changeDoc,
-}: MarkdownEditorProps) {
+type AnnotationType = {
+  _type: string;
+  color: { r: number; g: number; b: number };
+};
+
+const ANNOTATION_TYPES: AnnotationType[] = [
+  {
+    _type: "🥕 Ingredient",
+    color: { r: 253, g: 253, b: 85 },
+  },
+  {
+    _type: "⏱ Duration",
+    color: { r: 50, g: 250, b: 50 },
+  },
+  {
+    _type: "🔢 Step",
+    color: { r: 250, g: 50, b: 50 },
+  },
+];
+
+const AnnotateButton = ({
+  annotationType,
+  disabled,
+  addAnnotation,
+}: {
+  annotationType: AnnotationType;
+  disabled: boolean;
+  addAnnotation: (annotationType: string) => void;
+}) => {
+  return (
+    <button
+      className="toolbar-button"
+      disabled={disabled}
+      onClick={() => addAnnotation(annotationType._type)}
+      css={css`
+        border: solid thin #eee;
+        border-radius: 5px;
+        margin-right: 10px;
+        &:enabled {
+          background-color: rgb(
+            ${annotationType.color.r} ${annotationType.color.g}
+              ${annotationType.color.b} / 20%
+          );
+        }
+        &:active {
+          background-color: rgb(
+            ${annotationType.color.r} ${annotationType.color.g}
+              ${annotationType.color.b} / 50%
+          );
+        }
+      `}
+    >
+      {annotationType._type}
+    </button>
+  );
+};
+
+export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
     null
   );
 
   const docSpans = doc.annotations;
-
-  console.log(doc.annotations);
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -81,19 +134,19 @@ export default function MarkdownEditor({
     });
   };
 
-  // Set the active comment based on the latest selection in the doc
+  // Set the active annotation based on the latest selection in the doc
   useEffect(() => {
     let activeCommentId = null;
-    for (const comment of docSpans) {
+    for (const annotation of docSpans) {
       if (
-        activeCommentId !== comment.id &&
+        activeCommentId !== annotation.id &&
         selection &&
         Range.intersection(
           selection,
-          slateRangeFromAutomergeSpan(comment.range)
+          slateRangeFromAutomergeSpan(annotation.range)
         )
       ) {
-        activeCommentId = comment.id;
+        activeCommentId = annotation.id;
         break;
       }
     }
@@ -140,17 +193,12 @@ export default function MarkdownEditor({
 
       // Add comment highlighting decorations
       for (const docSpan of docSpans) {
-        if (activeAnnotationId === docSpan.id) {
-          ranges.push({
-            ...slateRangeFromAutomergeSpan(docSpan.range),
-            extraHighlighted: true,
-          });
-        } else {
-          ranges.push({
-            ...slateRangeFromAutomergeSpan(docSpan.range),
-            highlighted: true,
-          });
-        }
+        ranges.push({
+          ...slateRangeFromAutomergeSpan(docSpan.range),
+          highlighted: true,
+          [`annotation-${docSpan._type}`]: true,
+          active: activeAnnotationId === docSpan.id,
+        });
       }
 
       // Add Markdown decorations
@@ -197,20 +245,13 @@ export default function MarkdownEditor({
           grid-area: toolbar;
         `}
       >
-        <button
-          className="toolbar-button"
-          disabled={selection?.anchor?.offset === selection?.focus?.offset}
-          onClick={() => addAnnotation("ingredient")}
-        >
-          🥕 Ingredient
-        </button>
-        <button
-          className="toolbar-button"
-          disabled={selection?.anchor?.offset === selection?.focus?.offset}
-          onClick={() => addAnnotation("duration")}
-        >
-          ⏱ Duration
-        </button>
+        {ANNOTATION_TYPES.map((annotationType) => (
+          <AnnotateButton
+            disabled={selection?.anchor?.offset === selection?.focus?.offset}
+            annotationType={annotationType}
+            addAnnotation={addAnnotation}
+          />
+        ))}
       </div>
       <div
         css={css`
@@ -246,7 +287,7 @@ export default function MarkdownEditor({
         <div>
           <h2>Ingredients</h2>
           {doc.annotations
-            .filter((a) => a._type === "ingredient")
+            .filter((a) => a._type === "🥕 Ingredient")
             .map((annotation) => (
               <div
                 key={annotation.id}
@@ -265,6 +306,28 @@ export default function MarkdownEditor({
 }
 
 const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
+  const highlightOpacity = leaf.active ? 0.6 : 0.4;
+  // Get all the active annotation types at this leaf
+  const activeAnnotationTypes = Object.keys(leaf)
+    .filter((k) => k.startsWith("annotation-"))
+    .map((k) => k.split("-")[1]);
+
+  const highlightColors = activeAnnotationTypes.map(
+    (annotationType) =>
+      ANNOTATION_TYPES.find((t) => t._type === annotationType).color
+  );
+  const blendedColor = highlightColors.reduce(
+    (blended, color) =>
+      normal(
+        { ...blended, a: highlightOpacity },
+        { ...color, a: highlightOpacity }
+      ),
+    { r: 255, g: 255, b: 255, a: 0 }
+  );
+  if (activeAnnotationTypes.length > 0) {
+    console.log({ activeAnnotationTypes, highlightColors, blendedColor });
+  }
+
   return (
     <span
       {...attributes}
@@ -303,14 +366,14 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
           background-color: #eee;
           padding: 3px;
         `}
-        ${leaf.highlighted &&
+        ${activeAnnotationTypes.length > 0 &&
         css`
-          background-color: #fffabe;
-          color: black;
-        `}
-        ${leaf.extraHighlighted &&
-        css`
-          background-color: #ffeb00;
+          background-color: rgba(
+            ${blendedColor.r},
+            ${blendedColor.g},
+            ${blendedColor.b},
+            ${blendedColor.a}
+          );
           color: black;
         `}
       `}
@@ -319,55 +382,3 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
     </span>
   );
 };
-
-type CommentsProps = {
-  annotations: Annotation[];
-  activeAnnotationId: string;
-  setActiveAnnotationId: any;
-};
-
-function Ingredients({
-  annotations,
-  activeAnnotationId,
-  setActiveAnnotationId,
-}: CommentsProps) {
-  // todo: sort the comments
-
-  return (
-    <div className="comments-list">
-      {annotations.map((annotation) => {
-        // If a comment's start and end index are the same,
-        // the span it pointed to has been removed from the doc
-        if (annotation.range.start.index === annotation.range.end.index) {
-          return null;
-        }
-        return (
-          <div
-            key={annotation.id}
-            css={css`
-              margin: 3px;
-              cursor: pointer;
-
-              &:hover {
-                border: solid thin #bbb;
-              }
-
-              ${activeAnnotationId === annotation.id &&
-              `border: solid thin #bbb;
-              box-shadow: 0px 0px 5px 3px #ddd;`}
-            `}
-            onClick={() => setActiveAnnotationId(annotation.id)}
-          >
-            {annotation.text}
-            <div
-              css={css`
-                margin-top: 5px;
-                font-size: 12px;
-              `}
-            ></div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}

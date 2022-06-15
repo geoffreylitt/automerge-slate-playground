@@ -6,7 +6,6 @@ import { useAutomergeDoc } from "./hooks";
 import { MarkdownDoc, RichTextDoc } from "./slate-automerge";
 import Automerge from "automerge";
 import ReactJson from "react-json-view";
-import RichTextEditor from "./RichTextEditor";
 import MarkdownEditor from "./MarkdownEditor";
 
 export default function MarkdownDemo() {
