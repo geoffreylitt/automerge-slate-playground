@@ -65,12 +65,13 @@ export default function MarkdownEditor({
     [docSpans, activeCommentId]
   );
 
-  const addComment = () => {
+  const addAnnotation = (annotationType: string) => {
     changeDoc((doc: MarkdownDoc) => {
       doc.annotations.push({
         id: uuidv4(),
         range: automergeSpanFromSlateRange(doc.content, selection),
-        text: loremIpsum(),
+        _type: annotationType,
+        data: {},
       });
     });
   };
@@ -182,7 +183,7 @@ export default function MarkdownEditor({
         grid-template-rows: 30px auto;
         grid-template-areas:
           "toolbar toolbar"
-          "editor comments";
+          "editor annotations";
         column-gap: 10px;
         row-gap: 10px;
       `}
@@ -195,9 +196,16 @@ export default function MarkdownEditor({
         <button
           className="toolbar-button"
           disabled={selection?.anchor?.offset === selection?.focus?.offset}
-          onClick={addComment}
+          onClick={() => addAnnotation("ingredient")}
         >
-          💬 Comment
+          🥕 Ingredient
+        </button>
+        <button
+          className="toolbar-button"
+          disabled={selection?.anchor?.offset === selection?.focus?.offset}
+          onClick={() => addAnnotation("duration")}
+        >
+          ⏱ Duration
         </button>
       </div>
       <div
@@ -228,14 +236,18 @@ export default function MarkdownEditor({
       </div>
       <div
         css={css`
-          grid-area: comments;
+          grid-area: annotations;
         `}
       >
-        <Comments
-          comments={doc.annotations}
-          activeCommentId={activeCommentId}
-          setActiveCommentId={setActiveCommentId}
-        />
+        <div>
+          <h2>Ingredients</h2>
+          {JSON.stringify(doc.annotations)}
+          {doc.annotations
+            .filter((a) => a._type === "ingredient")
+            .map((annotation) => (
+              <div>ingredient (todo: get the text)</div>
+            ))}
+        </div>
       </div>
     </div>
   );
@@ -300,56 +312,50 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
 };
 
 type CommentsProps = {
-  comments: Annotation[];
-  activeCommentId: string;
-  setActiveCommentId: any;
+  annotations: Annotation[];
+  activeAnnotationId: string;
+  setActiveAnnotationId: any;
 };
 
-function Comments({
-  comments,
-  activeCommentId,
-  setActiveCommentId,
+function Ingredients({
+  annotations,
+  activeAnnotationId,
+  setActiveAnnotationId,
 }: CommentsProps) {
   // todo: sort the comments
 
   return (
     <div className="comments-list">
-      {comments.map((comment) => {
+      {annotations.map((annotation) => {
         // If a comment's start and end index are the same,
         // the span it pointed to has been removed from the doc
-        if (comment.range.start.index === comment.range.end.index) {
+        if (annotation.range.start.index === annotation.range.end.index) {
           return null;
         }
         return (
           <div
-            key={comment.id}
+            key={annotation.id}
             css={css`
-              border: solid thin #ddd;
-              border-radius: 10px;
-              padding: 10px;
-              margin: 10px;
+              margin: 3px;
               cursor: pointer;
 
               &:hover {
                 border: solid thin #bbb;
               }
 
-              ${activeCommentId === comment.id &&
+              ${activeAnnotationId === annotation.id &&
               `border: solid thin #bbb;
               box-shadow: 0px 0px 5px 3px #ddd;`}
             `}
-            onClick={() => setActiveCommentId(comment.id)}
+            onClick={() => setActiveAnnotationId(annotation.id)}
           >
-            {comment.text}
+            {annotation.text}
             <div
               css={css`
                 margin-top: 5px;
                 font-size: 12px;
               `}
-            >
-              (Text index: {comment.range.start.index} to{" "}
-              {comment.range.end.index})
-            </div>
+            ></div>
           </div>
         );
       })}

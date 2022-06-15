@@ -6,16 +6,23 @@ import { useAutomergeDoc } from "./hooks";
 import { MarkdownDoc, RichTextDoc } from "./slate-automerge";
 import Automerge from "automerge";
 import ReactJson from "react-json-view";
-import RichTextEditor from "./RichTextEditor";
-import MarkdownEditor from "./MarkdownEditor";
+import PotluckEditor from "./PotluckEditor";
 
-export default function MarkdownDemo() {
+export default function PotluckDemo() {
   const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>({
-    content: new Automerge.Text(`# Markdown with comments
+    content: new Automerge.Text(`# Green Eggs and Ham
 
-This is a Markdown doc with _rich formatting_ and **formatting preview**.
+## Ingredients
 
-Try adding a comment to the doc! It will stay attached as the doc changes.`),
+- A dozen Green Eggs
+- 1 large ham
+
+## Steps
+
+- Put the eggs in the pan
+- Put the ham in the pan
+- Cook for 10 minutes
+- Enjoy!`),
     annotations: [],
   });
 
@@ -47,9 +54,9 @@ Try adding a comment to the doc! It will stay attached as the doc changes.`),
             color: #aaa;
           `}
         >
-          Editor UI
+          Text Doc
         </div>
-        <MarkdownEditor doc={doc} changeDoc={changeDoc} />
+        <PotluckEditor doc={doc} changeDoc={changeDoc} />
       </div>
       <div
         css={css`
@@ -65,22 +72,8 @@ Try adding a comment to the doc! It will stay attached as the doc changes.`),
             color: #aaa;
           `}
         >
-          Automerge doc state
+          Plugins
         </div>
-        <ReactJson
-          src={{
-            content: doc.content.toString(),
-            comments: doc.annotations.map((span) => ({
-              start: span.range.start.index,
-              end: span.range.end.index,
-              text: span.text,
-            })),
-          }}
-          collapsed={false}
-          collapseStringsAfterLength={280}
-          displayDataTypes={false}
-          displayObjectSize={false}
-        />
       </div>
     </div>
   );
