@@ -12,6 +12,7 @@ import {
   Node,
   Operation,
   Editor,
+  Transforms,
 } from "slate";
 import { withHistory } from "slate-history";
 import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
@@ -26,6 +27,7 @@ import {
   getTextAtAutomergeSpan,
 } from "./slate-automerge";
 import { normal } from "color-blend";
+import isHotkey from "is-hotkey";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -63,16 +65,44 @@ const ANNOTATION_TYPES: AnnotationType[] = [
     _type: "🔢 Step",
     color: { r: 250, g: 50, b: 50 },
   },
+  {
+    _type: "🍽 Servings",
+    color: { r: 50, g: 50, b: 250 },
+  },
+  {
+    _type: "🥄 Quantity",
+    color: { r: 50, g: 50, b: 250 },
+  },
+  {
+    _type: "🥄 Food Name",
+    color: { r: 50, g: 50, b: 250 },
+  },
+  {
+    _type: "🏷 Tag",
+    color: { r: 50, g: 50, b: 250 },
+  },
 ];
+
+const HOTKEYS = {
+  "mod+1": ANNOTATION_TYPES[0]._type,
+  "mod+2": ANNOTATION_TYPES[1]._type,
+  "mod+3": ANNOTATION_TYPES[2]._type,
+  "mod+4": ANNOTATION_TYPES[3]._type,
+  "mod+5": ANNOTATION_TYPES[4]._type,
+  "mod+6": ANNOTATION_TYPES[5]._type,
+  "mod+7": ANNOTATION_TYPES[6]._type,
+};
 
 const AnnotateButton = ({
   annotationType,
   disabled,
   addAnnotation,
+  modifierDown,
 }: {
   annotationType: AnnotationType;
   disabled: boolean;
   addAnnotation: (annotationType: string) => void;
+  modifierDown: boolean;
 }) => {
   return (
     <button
@@ -97,7 +127,14 @@ const AnnotateButton = ({
         }
       `}
     >
-      {annotationType._type}
+      {annotationType._type}{" "}
+      <div
+        css={css`
+          color: #555;
+        `}
+      >
+        {modifierDown && `⌘+${ANNOTATION_TYPES.indexOf(annotationType) + 1}`}
+      </div>
     </button>
   );
 };
@@ -107,6 +144,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
     null
   );
+  const [modifierDown, setModifierDown] = useState<boolean>(false);
 
   const docSpans = doc.annotations;
 
@@ -123,14 +161,39 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
     [docSpans, activeAnnotationId]
   );
 
+  const editor = useMemo(() => {
+    return withOpHandler(
+      withHistory(withReact(createEditor())),
+      (op: Operation) => {
+        if (op.type === "insert_text") {
+          changeDoc((doc: MarkdownDoc) =>
+            doc.content.insertAt(op.offset, op.text)
+          );
+        }
+        if (op.type === "remove_text") {
+          changeDoc((doc: MarkdownDoc) =>
+            doc.content.deleteAt(op.offset, op.text.length)
+          );
+        }
+      }
+    );
+  }, []);
+
   const addAnnotation = (annotationType: string) => {
+    const currentSelection = selection;
     changeDoc((doc: MarkdownDoc) => {
       doc.annotations.push({
         id: uuidv4(),
-        range: automergeSpanFromSlateRange(doc.content, selection),
+        range: automergeSpanFromSlateRange(doc.content, currentSelection),
         _type: annotationType,
         data: {},
       });
+    });
+
+    // move the cursor to the end of the current selection
+    Transforms.select(editor, {
+      anchor: selection.focus,
+      focus: selection.focus,
     });
   };
 
@@ -152,24 +215,6 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
     }
     setActiveAnnotationId(activeCommentId);
   }, [selection]);
-
-  const editor = useMemo(() => {
-    return withOpHandler(
-      withHistory(withReact(createEditor())),
-      (op: Operation) => {
-        if (op.type === "insert_text") {
-          changeDoc((doc: MarkdownDoc) =>
-            doc.content.insertAt(op.offset, op.text)
-          );
-        }
-        if (op.type === "remove_text") {
-          changeDoc((doc: MarkdownDoc) =>
-            doc.content.deleteAt(op.offset, op.text.length)
-          );
-        }
-      }
-    );
-  }, []);
 
   const decorate = useCallback(
     ([node, path]) => {
@@ -229,7 +274,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   return (
     <div
       css={css`
-        padding: 10px;
+        padding: 30px;
         display: grid;
         grid-template-columns: 70% 30%;
         grid-template-rows: 30px auto;
@@ -250,6 +295,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
             disabled={selection?.anchor?.offset === selection?.focus?.offset}
             annotationType={annotationType}
             addAnnotation={addAnnotation}
+            modifierDown={modifierDown}
           />
         ))}
       </div>
@@ -275,6 +321,23 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
                 event.preventDefault();
                 editor.insertText("\n");
               }
+
+              for (const hotkey in HOTKEYS) {
+                if (isHotkey(hotkey, event as any)) {
+                  event.preventDefault();
+                  const annotationType = HOTKEYS[hotkey];
+                  addAnnotation(annotationType);
+                }
+              }
+
+              if (isHotkey("mod", event as any)) {
+                setModifierDown(true);
+              }
+            }}
+            onKeyUp={(event) => {
+              if (!isHotkey("mod", event as any)) {
+                setModifierDown(false);
+              }
             }}
           />
         </Slate>
@@ -286,19 +349,26 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
       >
         <div>
           <h2>Ingredients</h2>
-          {doc.annotations
-            .filter((a) => a._type === "🥕 Ingredient")
-            .map((annotation) => (
-              <div
-                key={annotation.id}
-                css={css`
-                  ${activeAnnotationId === annotation.id &&
-                  `background-color: #ddd;`}
-                `}
-              >
-                {getTextAtAutomergeSpan(doc.content, annotation.range)}
-              </div>
-            ))}
+          <ul>
+            {doc.annotations
+              .filter((a) => a._type === "🥕 Ingredient")
+              .map((annotation) => {
+                const color = ANNOTATION_TYPES.find(
+                  (t) => t._type === annotation._type
+                ).color;
+                return (
+                  <li
+                    key={annotation.id}
+                    css={css`
+                      ${activeAnnotationId === annotation.id &&
+                      `background-color: rgb(${color.r} ${color.g} ${color.b} / 0.3);`}
+                    `}
+                  >
+                    {getTextAtAutomergeSpan(doc.content, annotation.range)}
+                  </li>
+                );
+              })}
+          </ul>
         </div>
       </div>
     </div>
@@ -306,7 +376,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
 }
 
 const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
-  const highlightOpacity = leaf.active ? 0.6 : 0.4;
+  const highlightOpacity = leaf.active ? 0.6 : 0.25;
   // Get all the active annotation types at this leaf
   const activeAnnotationTypes = Object.keys(leaf)
     .filter((k) => k.startsWith("annotation-"))
