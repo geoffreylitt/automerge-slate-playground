@@ -176,10 +176,37 @@ export function automergeSpanFromSlateRange(
   text: Automerge.Text,
   range: Range
 ): AutomergeSpan {
+  // Slate differentiates between whether the user highlighted starting
+  // from the left or the right. We want to just store the annotation
+  // the same way regardless.
+  let start, end;
+  if (range.anchor.offset <= range.focus.offset) {
+    (start = range.anchor.offset), (end = range.focus.offset);
+  } else {
+    (start = range.focus.offset), (end = range.anchor.offset);
+  }
   return {
-    start: text.getCursorAt(range.anchor.offset),
-    end: text.getCursorAt(range.focus.offset),
+    start: text.getCursorAt(start),
+    end: text.getCursorAt(end),
   };
+}
+
+export function getTextAtAutomergeSpan(
+  text: Automerge.Text,
+  span: AutomergeSpan
+) {
+  let start, end;
+  if (span.start.index <= span.end.index) {
+    start = span.start.index;
+    end = span.end.index;
+  } else {
+    start = span.end.index;
+    end = span.start.index;
+    console.log("backwards", { start, end });
+  }
+  const result = text.slice(span.start.index, span.end.index).join("");
+  console.log({ result });
+  return result;
 }
 
 // Returns an array of objects, one per character in the doc,

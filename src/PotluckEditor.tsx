@@ -23,6 +23,7 @@ import {
   Annotation,
   slateRangeFromAutomergeSpan,
   automergeSpanFromSlateRange,
+  getTextAtAutomergeSpan,
 } from "./slate-automerge";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
@@ -51,6 +52,8 @@ export default function MarkdownEditor({
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
 
   const docSpans = doc.annotations;
+
+  console.log(doc.annotations);
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -99,7 +102,6 @@ export default function MarkdownEditor({
     return withOpHandler(
       withHistory(withReact(createEditor())),
       (op: Operation) => {
-        console.log("applying Slate operation", op);
         if (op.type === "insert_text") {
           changeDoc((doc: MarkdownDoc) =>
             doc.content.insertAt(op.offset, op.text)
@@ -241,11 +243,12 @@ export default function MarkdownEditor({
       >
         <div>
           <h2>Ingredients</h2>
-          {JSON.stringify(doc.annotations)}
           {doc.annotations
             .filter((a) => a._type === "ingredient")
             .map((annotation) => (
-              <div>ingredient (todo: get the text)</div>
+              <div key={annotation.id}>
+                {getTextAtAutomergeSpan(doc.content, annotation.range)}
+              </div>
             ))}
         </div>
       </div>
