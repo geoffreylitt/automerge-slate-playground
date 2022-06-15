@@ -28,6 +28,7 @@ import {
 } from "./slate-automerge";
 import { normal } from "color-blend";
 import isHotkey from "is-hotkey";
+import { uniq } from "lodash";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -67,19 +68,19 @@ const ANNOTATION_TYPES: AnnotationType[] = [
   },
   {
     _type: "🍽 Servings",
-    color: { r: 50, g: 50, b: 250 },
+    color: { r: 65, g: 155, b: 204 },
   },
   {
     _type: "🥄 Quantity",
-    color: { r: 50, g: 50, b: 250 },
+    color: { r: 204, g: 65, b: 135 },
   },
   {
     _type: "🥄 Food Name",
-    color: { r: 50, g: 50, b: 250 },
+    color: { r: 204, g: 98, b: 65 },
   },
   {
     _type: "🏷 Tag",
-    color: { r: 50, g: 50, b: 250 },
+    color: { r: 16, g: 176, b: 165 },
   },
 ];
 
@@ -347,33 +348,60 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
           grid-area: annotations;
         `}
       >
-        <div>
-          <h2>Ingredients</h2>
-          <ul>
-            {doc.annotations
-              .filter((a) => a._type === "🥕 Ingredient")
-              .map((annotation) => {
-                const color = ANNOTATION_TYPES.find(
-                  (t) => t._type === annotation._type
-                ).color;
-                return (
-                  <li
-                    key={annotation.id}
-                    css={css`
-                      ${activeAnnotationId === annotation.id &&
-                      `background-color: rgb(${color.r} ${color.g} ${color.b} / 0.3);`}
-                    `}
-                  >
-                    {getTextAtAutomergeSpan(doc.content, annotation.range)}
-                  </li>
-                );
-              })}
-          </ul>
-        </div>
+        <Annotations
+          activeAnnotationId={activeAnnotationId}
+          annotations={doc.annotations}
+          text={doc.content}
+        />
       </div>
     </div>
   );
 }
+
+const Annotations = ({
+  text,
+  annotations,
+  activeAnnotationId,
+}: {
+  text: Automerge.Text;
+  annotations: Annotation[];
+  activeAnnotationId: string;
+}) => {
+  const annotationTypes = uniq(annotations.map((a) => a._type));
+
+  return (
+    <div>
+      {annotationTypes.map((annotationType) => {
+        const color = ANNOTATION_TYPES.find(
+          (t) => t._type === annotationType
+        ).color;
+        const annotationsOfType = annotations.filter(
+          (a) => a._type === annotationType
+        );
+        return (
+          <div key={annotationType}>
+            <h3
+              style={{
+                backgroundColor: `rgb(${color.r} ${color.g} ${color.b} / 0.2)`,
+              }}
+            >
+              {annotationType}
+            </h3>
+            <ul>
+              {annotationsOfType.map((annotation) => {
+                return (
+                  <li key={annotation.id}>
+                    {getTextAtAutomergeSpan(text, annotation.range)}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
   const highlightOpacity = leaf.active ? 0.6 : 0.25;
@@ -394,9 +422,6 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
       ),
     { r: 255, g: 255, b: 255, a: 0 }
   );
-  if (activeAnnotationTypes.length > 0) {
-    console.log({ activeAnnotationTypes, highlightColors, blendedColor });
-  }
 
   return (
     <span
