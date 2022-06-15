@@ -49,7 +49,9 @@ export default function MarkdownEditor({
   changeDoc,
 }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
-  const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
+    null
+  );
 
   const docSpans = doc.annotations;
 
@@ -65,7 +67,7 @@ export default function MarkdownEditor({
 
   const renderLeaf = useCallback(
     (props) => <Leaf {...props} />,
-    [docSpans, activeCommentId]
+    [docSpans, activeAnnotationId]
   );
 
   const addAnnotation = (annotationType: string) => {
@@ -95,7 +97,7 @@ export default function MarkdownEditor({
         break;
       }
     }
-    setActiveCommentId(activeCommentId);
+    setActiveAnnotationId(activeCommentId);
   }, [selection]);
 
   const editor = useMemo(() => {
@@ -138,7 +140,7 @@ export default function MarkdownEditor({
 
       // Add comment highlighting decorations
       for (const docSpan of docSpans) {
-        if (activeCommentId === docSpan.id) {
+        if (activeAnnotationId === docSpan.id) {
           ranges.push({
             ...slateRangeFromAutomergeSpan(docSpan.range),
             extraHighlighted: true,
@@ -173,7 +175,7 @@ export default function MarkdownEditor({
 
       return ranges;
     },
-    [docSpans, activeCommentId]
+    [docSpans, activeAnnotationId]
   );
 
   return (
@@ -246,7 +248,13 @@ export default function MarkdownEditor({
           {doc.annotations
             .filter((a) => a._type === "ingredient")
             .map((annotation) => (
-              <div key={annotation.id}>
+              <div
+                key={annotation.id}
+                css={css`
+                  ${activeAnnotationId === annotation.id &&
+                  `background-color: #ddd;`}
+                `}
+              >
                 {getTextAtAutomergeSpan(doc.content, annotation.range)}
               </div>
             ))}
@@ -268,8 +276,6 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
         css`
           display: inline-block;
           font-weight: bold;
-          font-size: 20px;
-          margin: 20px 0 10px 0;
         `}
         ${leaf.list &&
         css`

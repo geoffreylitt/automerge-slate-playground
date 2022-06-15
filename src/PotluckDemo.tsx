@@ -29,13 +29,7 @@ export default function PotluckDemo() {
   return (
     <div
       css={css`
-        display: grid;
-        grid-template-columns: 50% 50%;
-        grid-template-rows: auto;
-        grid-template-areas: "app-left app-right";
-        column-gap: 50px;
-
-        width: 90vw;
+        max-width: 1000px;
         height: 100%;
         box-sizing: border-box;
       `}
@@ -46,34 +40,7 @@ export default function PotluckDemo() {
           overflow: hidden;
         `}
       >
-        <div
-          css={css`
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            color: #aaa;
-          `}
-        >
-          Text Doc
-        </div>
         <PotluckEditor doc={doc} changeDoc={changeDoc} />
-      </div>
-      <div
-        css={css`
-          grid-area: app-right;
-          overflow: hidden;
-        `}
-      >
-        <div
-          css={css`
-            margin-bottom: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            color: #aaa;
-          `}
-        >
-          Plugins
-        </div>
       </div>
     </div>
   );
