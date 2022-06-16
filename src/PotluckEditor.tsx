@@ -96,19 +96,16 @@ const HOTKEYS = {
 
 const AnnotateButton = ({
   annotationType,
-  disabled,
   addAnnotation,
   modifierDown,
 }: {
   annotationType: AnnotationType;
-  disabled: boolean;
   addAnnotation: (annotationType: string) => void;
   modifierDown: boolean;
 }) => {
   return (
     <button
       className="toolbar-button"
-      disabled={disabled}
       onClick={() => addAnnotation(annotationType._type)}
       css={css`
         border: solid thin #eee;
@@ -293,7 +290,6 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
       >
         {ANNOTATION_TYPES.map((annotationType) => (
           <AnnotateButton
-            disabled={selection?.anchor?.offset === selection?.focus?.offset}
             annotationType={annotationType}
             addAnnotation={addAnnotation}
             modifierDown={modifierDown}
@@ -379,14 +375,15 @@ const Annotations = ({
           (a) => a._type === annotationType
         );
         return (
-          <div key={annotationType}>
-            <h3
-              style={{
-                backgroundColor: `rgb(${color.r} ${color.g} ${color.b} / 0.2)`,
-              }}
-            >
-              {annotationType}
-            </h3>
+          <div
+            key={annotationType}
+            css={css`
+              background-color: rgb(${color.r} ${color.g} ${color.b} / 0.2);
+              padding: 2px 10px;
+              margin-bottom: 10px;
+            `}
+          >
+            <h3>{annotationType}</h3>
             <ul>
               {annotationsOfType.map((annotation) => {
                 return (
