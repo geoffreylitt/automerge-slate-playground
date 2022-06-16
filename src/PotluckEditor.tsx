@@ -59,6 +59,14 @@ const ANNOTATION_TYPES: AnnotationType[] = [
     color: { r: 253, g: 253, b: 85 },
   },
   {
+    _type: "🥄 Ingredient Quantity",
+    color: { r: 204, g: 65, b: 135 },
+  },
+  {
+    _type: "🥄 Ingredient Name",
+    color: { r: 204, g: 98, b: 65 },
+  },
+  {
     _type: "⏱ Duration",
     color: { r: 50, g: 250, b: 50 },
   },
@@ -69,14 +77,6 @@ const ANNOTATION_TYPES: AnnotationType[] = [
   {
     _type: "🍽 Servings",
     color: { r: 65, g: 155, b: 204 },
-  },
-  {
-    _type: "🥄 Quantity",
-    color: { r: 204, g: 65, b: 135 },
-  },
-  {
-    _type: "🥄 Food Name",
-    color: { r: 204, g: 98, b: 65 },
   },
   {
     _type: "🏷 Tag",
@@ -386,8 +386,14 @@ const Annotations = ({
             <h3>{annotationType}</h3>
             <ul>
               {annotationsOfType.map((annotation) => {
+                const active = activeAnnotationId === annotation.id;
                 return (
-                  <li key={annotation.id}>
+                  <li
+                    key={annotation.id}
+                    css={css`
+                      text-decoration: ${active ? "underline" : "none"};
+                    `}
+                  >
                     {getTextAtAutomergeSpan(text, annotation.range)}
                   </li>
                 );
