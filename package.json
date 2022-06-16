@@ -25,10 +25,12 @@
   },
   "dependencies": {
     "@emotion/react": "^11.1.1",
+    "@handsontable/react": "^12.0.1",
     "@types/prismjs": "^1.26.0",
     "@types/uuid": "^8.3.4",
     "automerge": "https://github.com/automerge/automerge.git#cursors-v2",
     "color-blend": "^4.0.0",
+    "handsontable": "^12.0.1",
     "is-hotkey": "^0.2.0",
     "lodash": "^4.17.21",
     "lorem-ipsum": "^2.0.3",

@@ -3,6 +3,7 @@
 
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
+import "handsontable/dist/handsontable.full.css";
 
 import {
   createEditor,
@@ -28,8 +29,11 @@ import {
 } from "./slate-automerge";
 import { normal } from "color-blend";
 import isHotkey from "is-hotkey";
-import { uniq } from "lodash";
+import { pick, uniq } from "lodash";
 import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
+import { HotTable } from "@handsontable/react";
+import { registerAllModules } from "handsontable/registry";
+registerAllModules();
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -53,13 +57,17 @@ type AnnotationType = {
   _type: string;
   color: { r: number; g: number; b: number };
   preprocess?: (text: string) => any;
+  visibleFields?: string[];
 };
 
 const ANNOTATION_TYPES: AnnotationType[] = [
   {
     _type: "🥕 Ingredient",
     color: { r: 253, g: 253, b: 85 },
-    preprocess: (text: string) => parseIngredient(text, "eng"),
+    preprocess: (text: string) => {
+      return parseIngredient(text, "eng");
+    },
+    visibleFields: ["quantity", "unit", "ingredient"],
   },
   {
     _type: "🥄 Ingredient Quantity",
@@ -293,7 +301,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
         box-sizing: border-box;
         max-height: 100vh;
         display: grid;
-        grid-template-columns: 70% 30%;
+        grid-template-columns: 60% 40%;
         grid-template-rows: 30px auto;
         grid-template-areas:
           "toolbar toolbar"
@@ -388,12 +396,23 @@ const Annotations = ({
   return (
     <div>
       {annotationTypes.map((annotationType) => {
-        const color = ANNOTATION_TYPES.find(
+        const annotationTypeDefinition = ANNOTATION_TYPES.find(
           (t) => t._type === annotationType
-        ).color;
+        );
+        const color = annotationTypeDefinition.color;
         const annotationsOfType = annotations.filter(
           (a) => a._type === annotationType
         );
+        const visibleFields = annotationTypeDefinition.visibleFields ?? [
+          "text",
+        ];
+        const annotationsForTable = annotationsOfType.map((a) =>
+          pick(
+            { ...a.data, text: getTextAtAutomergeSpan(text, a.range) },
+            visibleFields
+          )
+        );
+
         return (
           <div
             key={annotationType}
@@ -404,21 +423,17 @@ const Annotations = ({
             `}
           >
             <h3>{annotationType}</h3>
-            <ul>
-              {annotationsOfType.map((annotation) => {
-                const active = activeAnnotationId === annotation.id;
-                return (
-                  <li
-                    key={annotation.id}
-                    css={css`
-                      text-decoration: ${active ? "underline" : "none"};
-                    `}
-                  >
-                    {getTextAtAutomergeSpan(text, annotation.range)}
-                  </li>
-                );
-              })}
-            </ul>
+            <HotTable
+              data={annotationsForTable}
+              colHeaders={visibleFields}
+              rowHeaders={false}
+              width="400"
+              height="300"
+              licenseKey="non-commercial-and-evaluation"
+              colWidths={80}
+              manualColumnResize={true}
+              wordWrap={false}
+            />
           </div>
         );
       })}

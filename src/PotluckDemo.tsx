@@ -74,7 +74,7 @@ export default function PotluckDemo() {
   return (
     <div
       css={css`
-        max-width: 1000px;
+        max-width: 100vw;
         height: 100%;
         box-sizing: border-box;
       `}
