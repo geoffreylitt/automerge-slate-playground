@@ -29,6 +29,7 @@ import {
 import { normal } from "color-blend";
 import isHotkey from "is-hotkey";
 import { uniq } from "lodash";
+import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
   const { apply } = editor;
@@ -51,12 +52,14 @@ type MarkdownEditorProps = {
 type AnnotationType = {
   _type: string;
   color: { r: number; g: number; b: number };
+  preprocess?: (text: string) => any;
 };
 
 const ANNOTATION_TYPES: AnnotationType[] = [
   {
     _type: "🥕 Ingredient",
     color: { r: 253, g: 253, b: 85 },
+    preprocess: (text: string) => parseIngredient(text, "eng"),
   },
   {
     _type: "🥄 Ingredient Quantity",
@@ -146,6 +149,8 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
 
   const docSpans = doc.annotations;
 
+  console.log([...doc.annotations]);
+
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
   const content: Node[] = [
@@ -180,11 +185,23 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const addAnnotation = (annotationType: string) => {
     const currentSelection = selection;
     changeDoc((doc: MarkdownDoc) => {
+      const automergeSpan = automergeSpanFromSlateRange(
+        doc.content,
+        currentSelection
+      );
+      const preprocessor = ANNOTATION_TYPES.find(
+        (t) => t._type === annotationType
+      )?.preprocess;
+      const annotationData =
+        preprocessor !== undefined
+          ? preprocessor(getTextAtAutomergeSpan(doc.content, automergeSpan))
+          : {};
+
       doc.annotations.push({
         id: uuidv4(),
-        range: automergeSpanFromSlateRange(doc.content, currentSelection),
+        range: automergeSpan,
         _type: annotationType,
-        data: {},
+        data: annotationData,
       });
     });
 

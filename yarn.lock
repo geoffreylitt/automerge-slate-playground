@@ -178,6 +178,11 @@
   resolved "https://registry.yarnpkg.com/@types/node/-/node-15.6.1.tgz#32d43390d5c62c5b6ec486a9bc9c59544de39a08"
   integrity sha512-7EIraBEyRHEe7CH+Fm1XvgqU6uwZN8Q7jppJGcqjROMT29qhAuuOxYB1uEY5UMYQKEmA5D+5tBnhdaPXSsLONA==
 
+"@types/node@^10.5.1":
+  version "10.17.60"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.17.60.tgz#35f3d6213daed95da7f0f73e75bcc6980e90597b"
+  integrity sha512-F0KIgDJfy2nA3zMLmWGKxcH2ZVEtCZXHHdOQs2gSaQ27+lNeEfGxzkIw90aXswATX7AZ33tahPbzy6KAfUreVw==
+
 "@types/prismjs@^1.26.0":
   version "1.26.0"
   resolved "https://registry.yarnpkg.com/@types/prismjs/-/prismjs-1.26.0.tgz#a1c3809b0ad61c62cac6d4e0c56d610c910b7654"
@@ -1448,6 +1453,13 @@ readdirp@~3.5.0:
   integrity sha512-cMhu7c/8rdhkHXWsY+osBhfSy0JikwpHK/5+imo+LpeasTF8ouErHrlYkwT0++njiyuDvc7OFY5T3ukvZ8qmFQ==
   dependencies:
     picomatch "^2.2.1"
+
+recipe-ingredient-parser-v3@^1.2.17:
+  version "1.2.17"
+  resolved "https://registry.yarnpkg.com/recipe-ingredient-parser-v3/-/recipe-ingredient-parser-v3-1.2.17.tgz#cd9c5a959c345a39c269ffb4a705551be19673a1"
+  integrity sha512-jRmB1fEEi4AJHxSIrtlTIYmx6zwKLJIzYGCYFdmsfD0fqi+SXIPGrDUW1/JO1H13UWlM7ieaQGWkmLN0fT1evA==
+  dependencies:
+    "@types/node" "^10.5.1"
 
 regenerator-runtime@^0.13.4:
   version "0.13.7"
