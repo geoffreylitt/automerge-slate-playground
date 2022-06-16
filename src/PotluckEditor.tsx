@@ -273,6 +273,8 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
     <div
       css={css`
         padding: 30px;
+        box-sizing: border-box;
+        max-height: 100vh;
         display: grid;
         grid-template-columns: 70% 30%;
         grid-template-rows: 30px auto;
@@ -336,6 +338,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
                 setModifierDown(false);
               }
             }}
+            style={{ maxHeight: "700px", overflow: "auto" }}
           />
         </Slate>
       </div>
