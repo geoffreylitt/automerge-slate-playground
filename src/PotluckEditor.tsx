@@ -56,41 +56,49 @@ type MarkdownEditorProps = {
 type AnnotationType = {
   _type: string;
   color: { r: number; g: number; b: number };
+  icon: string;
   preprocess?: (text: string) => any;
   visibleFields?: string[];
 };
 
 const ANNOTATION_TYPES: AnnotationType[] = [
   {
-    _type: "🥕 Ingredient",
+    _type: "Ingredient",
     color: { r: 253, g: 253, b: 85 },
+    icon: "🥕",
     preprocess: (text: string) => {
       return parseIngredient(text, "eng");
     },
     visibleFields: ["quantity", "unit", "ingredient"],
   },
   {
-    _type: "🥄 Ingredient Quantity",
+    _type: "Ingredient Quantity",
+    icon: "🥄",
     color: { r: 204, g: 65, b: 135 },
   },
   {
-    _type: "🥄 Ingredient Name",
+    _type: "Ingredient Name",
+    icon: "🍅",
     color: { r: 204, g: 98, b: 65 },
   },
   {
-    _type: "⏱ Duration",
+    _type: "Duration",
+    icon: "🕓",
     color: { r: 50, g: 250, b: 50 },
   },
   {
-    _type: "🔢 Step",
+    _type: "Step",
+    icon: "🔢",
     color: { r: 250, g: 50, b: 50 },
   },
   {
-    _type: "🍽 Servings",
+    _type: "Servings",
+    icon: "🍴",
     color: { r: 65, g: 155, b: 204 },
   },
   {
-    _type: "🏷 Tag",
+    _type: "Tag",
+    icon: "🏷",
     color: { r: 16, g: 176, b: 165 },
   },
 ];
@@ -122,6 +130,9 @@ const AnnotateButton = ({
         border: solid thin #eee;
         border-radius: 5px;
         margin-right: 10px;
+        &:hover {
+          cursor: pointer;
+        }
         &:enabled {
           background-color: rgb(
             ${annotationType.color.r} ${annotationType.color.g}
@@ -136,7 +147,7 @@ const AnnotateButton = ({
         }
       `}
     >
-      {annotationType._type}{" "}
+      {annotationType.icon} {annotationType._type}
       <div
         css={css`
           color: #555;
@@ -156,8 +167,6 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const [modifierDown, setModifierDown] = useState<boolean>(false);
 
   const docSpans = doc.annotations;
-
-  console.log([...doc.annotations]);
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -428,7 +437,7 @@ const Annotations = ({
               colHeaders={visibleFields}
               rowHeaders={false}
               width="400"
-              height="300"
+              height="200"
               licenseKey="non-commercial-and-evaluation"
               colWidths={80}
               manualColumnResize={true}
@@ -442,16 +451,14 @@ const Annotations = ({
 };
 
 const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
-  const highlightOpacity = leaf.active ? 0.6 : 0.25;
+  const highlightOpacity = leaf.active ? 0.6 : 0.2;
   // Get all the active annotation types at this leaf
   const activeAnnotationTypes = Object.keys(leaf)
     .filter((k) => k.startsWith("annotation-"))
-    .map((k) => k.split("-")[1]);
+    .map((k) => k.split("-")[1])
+    .map((typeName) => ANNOTATION_TYPES.find((t) => t._type === typeName));
 
-  const highlightColors = activeAnnotationTypes.map(
-    (annotationType) =>
-      ANNOTATION_TYPES.find((t) => t._type === annotationType).color
-  );
+  const highlightColors = activeAnnotationTypes.map((a) => a.color);
   const blendedColor = highlightColors.reduce(
     (blended, color) =>
       normal(
@@ -508,6 +515,13 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
             ${blendedColor.a}
           );
           color: black;
+          text-decoration: underline;
+          text-decoration-color: #ccc;
+          &::before {
+            content: ${activeAnnotationTypes
+              .map((at) => `"${at.icon} "`)
+              .join(" ")};
+          }
         `}
       `}
     >
