@@ -202,11 +202,8 @@ export function getTextAtAutomergeSpan(
   } else {
     start = span.end.index;
     end = span.start.index;
-    console.log("backwards", { start, end });
   }
-  const result = text.slice(span.start.index, span.end.index).join("");
-  console.log({ result });
-  return result;
+  return text.slice(span.start.index, span.end.index).join("");
 }
 
 // Returns an array of objects, one per character in the doc,
