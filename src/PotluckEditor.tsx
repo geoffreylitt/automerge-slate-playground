@@ -29,7 +29,7 @@ import {
 } from "./slate-automerge";
 import { normal } from "color-blend";
 import isHotkey from "is-hotkey";
-import { pick, uniq } from "lodash";
+import { pick, pickBy, sortBy, uniq } from "lodash";
 import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
 import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
@@ -383,6 +383,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
       >
         <Annotations
           activeAnnotationId={activeAnnotationId}
+          setActiveAnnotationId={setActiveAnnotationId}
           annotations={doc.annotations}
           text={doc.content}
         />
@@ -395,10 +396,12 @@ const Annotations = ({
   text,
   annotations,
   activeAnnotationId,
+  setActiveAnnotationId,
 }: {
   text: Automerge.Text;
   annotations: Annotation[];
   activeAnnotationId: string;
+  setActiveAnnotationId: (id: string) => void;
 }) => {
   const annotationTypes = uniq(annotations.map((a) => a._type));
 
@@ -409,9 +412,11 @@ const Annotations = ({
           (t) => t._type === annotationType
         );
         const color = annotationTypeDefinition.color;
-        const annotationsOfType = annotations.filter(
-          (a) => a._type === annotationType
-        );
+        const annotationsOfType = sortBy(
+          annotations,
+          (a) => a.range.start.index
+        ).filter((a) => a._type === annotationType);
+        console.log(annotationType, annotationsOfType);
         const visibleFields = annotationTypeDefinition.visibleFields ?? [
           "text",
         ];
@@ -442,6 +447,13 @@ const Annotations = ({
               colWidths={80}
               manualColumnResize={true}
               wordWrap={false}
+              afterSelection={(row, col, row2, col2) => {
+                console.log({ row, col });
+                const annotation = annotationsOfType[row];
+                if (annotation) {
+                  setActiveAnnotationId(annotation.id);
+                }
+              }}
             />
           </div>
         );
@@ -516,7 +528,7 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
           );
           color: black;
           text-decoration: underline;
-          text-decoration-color: #ccc;
+          text-decoration-color: ${leaf.active ? `#888` : `#ccc`};
           &::before {
             content: ${activeAnnotationTypes
               .map((at) => `"${at.icon} "`)
