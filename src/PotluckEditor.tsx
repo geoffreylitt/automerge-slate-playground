@@ -1,17 +1,9 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
 
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
-import "./potluck.css";
 
 import {
   createEditor,
@@ -41,7 +33,6 @@ import { pick, pickBy, sortBy, uniq } from "lodash";
 import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
 import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
-import Handsontable from "handsontable";
 registerAllModules();
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
@@ -390,7 +381,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
           grid-area: annotations;
         `}
       >
-        <StructuredAnnotations
+        <Annotations
           activeAnnotationId={activeAnnotationId}
           setActiveAnnotationId={setActiveAnnotationId}
           annotations={doc.annotations}
@@ -401,7 +392,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   );
 }
 
-const StructuredAnnotations = ({
+const Annotations = ({
   text,
   annotations,
   activeAnnotationId,
@@ -416,98 +407,57 @@ const StructuredAnnotations = ({
 
   return (
     <div>
-      {annotationTypes.map((annotationType) => (
-        <StructuredAnnotationsOfType
-          key={annotationType}
-          annotationType={annotationType}
-          text={text}
-          annotations={annotations}
-          activeAnnotationId={activeAnnotationId}
-          setActiveAnnotationId={setActiveAnnotationId}
-        />
-      ))}
-    </div>
-  );
-};
+      {annotationTypes.map((annotationType) => {
+        const annotationTypeDefinition = ANNOTATION_TYPES.find(
+          (t) => t._type === annotationType
+        );
+        const color = annotationTypeDefinition.color;
+        const annotationsOfType = sortBy(
+          annotations,
+          (a) => a.range.start.index
+        ).filter((a) => a._type === annotationType);
+        console.log(annotationType, annotationsOfType);
+        const visibleFields = annotationTypeDefinition.visibleFields ?? [
+          "text",
+        ];
+        const annotationsForTable = annotationsOfType.map((a) =>
+          pick(
+            { ...a.data, text: getTextAtAutomergeSpan(text, a.range) },
+            visibleFields
+          )
+        );
 
-const StructuredAnnotationsOfType = ({
-  text,
-  annotations,
-  activeAnnotationId,
-  setActiveAnnotationId,
-  annotationType,
-}: {
-  text: Automerge.Text;
-  annotations: Annotation[];
-  activeAnnotationId: string;
-  setActiveAnnotationId: (id: string) => void;
-  annotationType: string;
-}) => {
-  const annotationTypeDefinition = ANNOTATION_TYPES.find(
-    (t) => t._type === annotationType
-  );
-  const color = annotationTypeDefinition.color;
-  const annotationsOfType = sortBy(
-    annotations,
-    (a) => a.range.start.index
-  ).filter((a) => a._type === annotationType);
-  const visibleFields = annotationTypeDefinition.visibleFields ?? ["text"];
-  const annotationsForTable = annotationsOfType.map((a) =>
-    pick(
-      { ...a.data, text: getTextAtAutomergeSpan(text, a.range) },
-      visibleFields
-    )
-  );
-
-  const hotRef = useRef<any>();
-
-  // TODO:
-  // This is an effect that selects the table row for the active annotation
-  // whenever the user selects that annotation within the text document.
-  // However, this broke text editing because it focuses the table when the user
-  // is trying to edit the text.
-  // Can update this to only apply a visual style to the relevant row.
-  // useEffect(() => {
-  //   const activeAnnotationIndex = annotationsOfType.findIndex(
-  //     (a) => a.id === activeAnnotationId
-  //   );
-  //   if (activeAnnotationIndex !== undefined && hotRef.current) {
-  //     const hot = hotRef.current!.hotInstance as Handsontable;
-  //     hot.selectCell(activeAnnotationIndex, 0);
-  //   }
-  // }, [activeAnnotationId]);
-
-  return (
-    <div
-      key={annotationType}
-      css={css`
-        background-color: rgb(${color.r} ${color.g} ${color.b} / 0.2);
-        padding: 2px 10px;
-        margin-bottom: 10px;
-      `}
-    >
-      <h3>
-        {annotationTypeDefinition.icon} {annotationType}
-      </h3>
-      <HotTable
-        data={annotationsForTable}
-        colHeaders={visibleFields}
-        ref={hotRef}
-        rowHeaders={false}
-        width="400"
-        height="200"
-        licenseKey="non-commercial-and-evaluation"
-        colWidths={80}
-        manualColumnResize={true}
-        wordWrap={false}
-        afterSelection={(row, col, row2, col2) => {
-          console.log({ row, col });
-          const annotation = annotationsOfType[row];
-          if (annotation) {
-            setActiveAnnotationId(annotation.id);
-          }
-        }}
-      />
+        return (
+          <div
+            key={annotationType}
+            css={css`
+              background-color: rgb(${color.r} ${color.g} ${color.b} / 0.2);
+              padding: 2px 10px;
+              margin-bottom: 10px;
+            `}
+          >
+            <h3>{annotationType}</h3>
+            <HotTable
+              data={annotationsForTable}
+              colHeaders={visibleFields}
+              rowHeaders={false}
+              width="400"
+              height="200"
+              licenseKey="non-commercial-and-evaluation"
+              colWidths={80}
+              manualColumnResize={true}
+              wordWrap={false}
+              afterSelection={(row, col, row2, col2) => {
+                console.log({ row, col });
+                const annotation = annotationsOfType[row];
+                if (annotation) {
+                  setActiveAnnotationId(annotation.id);
+                }
+              }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };
