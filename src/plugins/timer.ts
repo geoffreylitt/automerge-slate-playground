@@ -10,7 +10,24 @@ const timerPlugin: Plugin = {
       const text = getTextOfAnnotation(doc, annotation)
 
       if (annotation._type === DURATION_TYPE) {
-         annotation.data.durationInSeconds = parseDuration(text) / 1000
+         annotation.data.totalSeconds = parseDuration(text) / 1000
+      }
+    }
+  },
+
+  annotations: {
+    [DURATION_TYPE]: {
+      computed: {
+        isInProgress: ({remainingSeconds}) => remainingSeconds !== undefined,
+        isFinished: ({remainingSeconds}) => remainingSeconds === 0,
+        isPaused: ({remainingSeconds, isRunning}) => remainingSeconds > 0 && isRunning === false,
+        minutesDigits: ({remainingSeconds}) => Math.floor(remainingSeconds / 60),
+        secondsDigits: ({remainingSeconds, minutesDigits}) => remainingSeconds - minutesDigits * 60,
+      },
+
+      defaults: {
+        isRunning: () => false,
+        remainingSeconds: ({ totalSeconds }) => totalSeconds
       }
     }
   }

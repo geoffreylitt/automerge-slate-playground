@@ -1,14 +1,14 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
 
-import { useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { jsx, css } from "@emotion/react";
+import {useCallback, useContext, useEffect, useMemo, useState} from "react";
+import {jsx, css} from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
-import { formatQuantity } from "format-quantity";
+import {formatQuantity} from "format-quantity";
 import scalerPlugin from "./plugins/scaler";
 import ingredientsPlugin from "./plugins/ingredients";
 import timerPlugin from './plugins/timer';
-import {AnnotationView, getMergedExtensions, Plugin} from './plugins';
+import {AnnotationView, ComputedProperties, getMergedExtensions, Plugin, annotationWithComputedProps} from './plugins';
 
 import {
   createEditor,
@@ -20,11 +20,11 @@ import {
   Editor,
   Transforms,
 } from "slate";
-import { withHistory } from "slate-history";
-import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
-import Prism, { Token } from "prismjs";
-import { loremIpsum } from "lorem-ipsum";
-import { v4 as uuidv4 } from "uuid";
+import {withHistory} from "slate-history";
+import {Editable, RenderLeafProps, Slate, withReact} from "slate-react";
+import Prism, {Token} from "prismjs";
+import {loremIpsum} from "lorem-ipsum";
+import {v4 as uuidv4} from "uuid";
 import {
   MarkdownDoc,
   Annotation,
@@ -32,17 +32,18 @@ import {
   automergeSpanFromSlateRange,
   getTextAtAutomergeSpan,
 } from "./slate-automerge";
-import { normal } from "color-blend";
+import {normal} from "color-blend";
 import isHotkey from "is-hotkey";
-import { pick, pickBy, sortBy, uniq } from "lodash";
-import { HotTable } from "@handsontable/react";
-import { registerAllModules } from "handsontable/registry";
-import { ANNOTATION_TYPES } from "./annotations";
+import {pick, pickBy, sortBy, uniq} from "lodash";
+import {HotTable} from "@handsontable/react";
+import {registerAllModules} from "handsontable/registry";
+import {ANNOTATION_TYPES} from "./annotations";
 import {applyPluginTransforms} from './plugins';
+
 registerAllModules();
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
-  const { apply } = editor;
+  const {apply} = editor;
   editor.apply = (op) => {
     apply(op);
     callback(op);
@@ -52,14 +53,47 @@ const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
 
 // eslint-disable-next-line
 // @ts-ignore
-Prism.languages.markdown=Prism.languages.extend("markup",{}),Prism.languages.insertBefore("markdown","prolog",{blockquote:{pattern:/^>(?:[\t ]*>)*/m,alias:"punctuation"},code:[{pattern:/^(?: {4}|\t).+/m,alias:"keyword"},{pattern:/``.+?``|`[^`\n]+`/,alias:"keyword"}],title:[{pattern:/\w+.*(?:\r?\n|\r)(?:==+|--+)/,alias:"important",inside:{punctuation:/==+$|--+$/}},{pattern:/(^\s*)#+.+/m,lookbehind:!0,alias:"important",inside:{punctuation:/^#+|#+$/}}],hr:{pattern:/(^\s*)([*-])([\t ]*\2){2,}(?=\s*$)/m,lookbehind:!0,alias:"punctuation"},list:{pattern:/(^\s*)(?:[*+-]|\d+\.)(?=[\t ].)/m,lookbehind:!0,alias:"punctuation"},"url-reference":{pattern:/!?\[[^\]]+\]:[\t ]+(?:\S+|<(?:\\.|[^>\\])+>)(?:[\t ]+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\)))?/,inside:{variable:{pattern:/^(!?\[)[^\]]+/,lookbehind:!0},string:/(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\))$/,punctuation:/^[\[\]!:]|[<>]/},alias:"url"},bold:{pattern:/(^|[^\\])(\*\*|__)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^\*\*|^__|\*\*$|__$/}},italic:{pattern:/(^|[^\\])([*_])(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^[*_]|[*_]$/}},url:{pattern:/!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,inside:{variable:{pattern:/(!?\[)[^\]]+(?=\]$)/,lookbehind:!0},string:{pattern:/"(?:\\.|[^"\\])*"(?=\)$)/}}}}),Prism.languages.markdown.bold.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.italic.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.bold.inside.italic=Prism.util.clone(Prism.languages.markdown.italic),Prism.languages.markdown.italic.inside.bold=Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
+Prism.languages.markdown = Prism.languages.extend("markup", {}), Prism.languages.insertBefore("markdown", "prolog", {
+  blockquote: {pattern: /^>(?:[\t ]*>)*/m, alias: "punctuation"},
+  code: [{pattern: /^(?: {4}|\t).+/m, alias: "keyword"}, {pattern: /``.+?``|`[^`\n]+`/, alias: "keyword"}],
+  title: [{
+    pattern: /\w+.*(?:\r?\n|\r)(?:==+|--+)/,
+    alias: "important",
+    inside: {punctuation: /==+$|--+$/}
+  }, {pattern: /(^\s*)#+.+/m, lookbehind: !0, alias: "important", inside: {punctuation: /^#+|#+$/}}],
+  hr: {pattern: /(^\s*)([*-])([\t ]*\2){2,}(?=\s*$)/m, lookbehind: !0, alias: "punctuation"},
+  list: {pattern: /(^\s*)(?:[*+-]|\d+\.)(?=[\t ].)/m, lookbehind: !0, alias: "punctuation"},
+  "url-reference": {
+    pattern: /!?\[[^\]]+\]:[\t ]+(?:\S+|<(?:\\.|[^>\\])+>)(?:[\t ]+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\)))?/,
+    inside: {
+      variable: {pattern: /^(!?\[)[^\]]+/, lookbehind: !0},
+      string: /(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\))$/,
+      punctuation: /^[\[\]!:]|[<>]/
+    },
+    alias: "url"
+  },
+  bold: {
+    pattern: /(^|[^\\])(\*\*|__)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,
+    lookbehind: !0,
+    inside: {punctuation: /^\*\*|^__|\*\*$|__$/}
+  },
+  italic: {
+    pattern: /(^|[^\\])([*_])(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,
+    lookbehind: !0,
+    inside: {punctuation: /^[*_]|[*_]$/}
+  },
+  url: {
+    pattern: /!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,
+    inside: {variable: {pattern: /(!?\[)[^\]]+(?=\]$)/, lookbehind: !0}, string: {pattern: /"(?:\\.|[^"\\])*"(?=\)$)/}}
+  }
+}), Prism.languages.markdown.bold.inside.url = Prism.util.clone(Prism.languages.markdown.url), Prism.languages.markdown.italic.inside.url = Prism.util.clone(Prism.languages.markdown.url), Prism.languages.markdown.bold.inside.italic = Prism.util.clone(Prism.languages.markdown.italic), Prism.languages.markdown.italic.inside.bold = Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
 
 type MarkdownEditorProps = {
   doc: MarkdownDoc;
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
 };
 
-const PLUGINS : Plugin[] = [
+const PLUGINS: Plugin[] = [
   ingredientsPlugin,
   scalerPlugin,
   timerPlugin
@@ -85,10 +119,10 @@ const HOTKEYS = {
 };
 
 const AnnotateButton = ({
-  annotationType,
-  addAnnotation,
-  modifierDown,
-}: {
+                          annotationType,
+                          addAnnotation,
+                          modifierDown,
+                        }: {
   annotationType: AnnotationType;
   addAnnotation: (annotationType: string) => void;
   modifierDown: boolean;
@@ -101,20 +135,19 @@ const AnnotateButton = ({
         border: solid thin #eee;
         border-radius: 5px;
         margin-right: 10px;
+
         &:hover {
           cursor: pointer;
         }
+
         &:enabled {
-          background-color: rgb(
-            ${annotationType.color.r} ${annotationType.color.g}
-              ${annotationType.color.b} / 20%
-          );
+          background-color: rgb(${annotationType.color.r} ${annotationType.color.g}
+            ${annotationType.color.b} / 20%);
         }
+
         &:active {
-          background-color: rgb(
-            ${annotationType.color.r} ${annotationType.color.g}
-              ${annotationType.color.b} / 50%
-          );
+          background-color: rgb(${annotationType.color.r} ${annotationType.color.g}
+            ${annotationType.color.b} / 50%);
         }
       `}
     >
@@ -130,7 +163,7 @@ const AnnotateButton = ({
   );
 };
 
-export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
+export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
     null
@@ -143,12 +176,12 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   // It should stay a single node throughout all edits.
   const content: Node[] = [
     {
-      children: [{ text: doc.content.toString() }],
+      children: [{text: doc.content.toString()}],
     },
   ];
 
   const renderLeaf = useCallback(
-    (props) => <Leaf {...props} annotations={docSpans} />,
+    (props) => <Leaf {...props} annotations={docSpans}/>,
     [docSpans, activeAnnotationId]
   );
 
@@ -190,7 +223,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
 
 
       // todo: reapply transformation whenever annotations change instead of calling transform at creation
-      const annotations : Annotation[] = [{
+      const annotations: Annotation[] = [{
         id: uuidv4(),
         range: automergeSpan,
         _type: annotationType,
@@ -200,8 +233,6 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
       const transformedAnnotations = applyPluginTransforms(PLUGINS, doc, annotations)
 
       for (const annotation of transformedAnnotations) {
-        console.log('add annotation', annotation)
-
         doc.annotations.push(annotation);
       }
     });
@@ -276,8 +307,8 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
         if (typeof token !== "string") {
           ranges.push({
             [token.type]: true,
-            anchor: { path, offset: start },
-            focus: { path, offset: end },
+            anchor: {path, offset: start},
+            focus: {path, offset: end},
           });
         }
 
@@ -325,7 +356,8 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
           grid-area: editor;
         `}
       >
-        <Slate editor={editor} value={content} onChange={() => {}}>
+        <Slate editor={editor} value={content} onChange={() => {
+        }}>
           <Editable
             decorate={decorate}
             renderLeaf={renderLeaf}
@@ -358,7 +390,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
                 setModifierDown(false);
               }
             }}
-            style={{ maxHeight: "700px", overflow: "auto" }}
+            style={{maxHeight: "700px", overflow: "auto"}}
           />
         </Slate>
       </div>
@@ -379,11 +411,11 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
 }
 
 const Annotations = ({
-  text,
-  annotations,
-  activeAnnotationId,
-  setActiveAnnotationId,
-}: {
+                       text,
+                       annotations,
+                       activeAnnotationId,
+                       setActiveAnnotationId,
+                     }: {
   text: Automerge.Text;
   annotations: Annotation[];
   activeAnnotationId: string;
@@ -406,12 +438,22 @@ const Annotations = ({
         const visibleFields = annotationTypeDefinition.visibleFields ?? [
           "text",
         ];
-        const annotationsForTable = annotationsOfType.map((a) =>
-          pick(
-            { ...a.data, text: getTextAtAutomergeSpan(text, a.range) },
-            visibleFields
-          )
-        );
+        const annotationsForTable = annotationsOfType.map((a) => {
+          const extension = EXTENSIONS_BY_ANNOTATION[a._type];
+          const annotation = annotationWithComputedProps({
+            ...a.data,
+            text: getTextAtAutomergeSpan(text, a.range)
+          }, extension)
+
+
+          const data: any = {}
+
+          for (const field of visibleFields) {
+            data[field] = annotation[field]
+          }
+
+          return data;
+        });
 
         return (
           <div
@@ -434,7 +476,7 @@ const Annotations = ({
               manualColumnResize={true}
               wordWrap={false}
               afterSelection={(row, col, row2, col2) => {
-                console.log({ row, col });
+                console.log({row, col});
                 const annotation = annotationsOfType[row];
                 if (annotation) {
                   setActiveAnnotationId(annotation.id);
@@ -452,11 +494,11 @@ const Annotations = ({
 // We style the "leaf" element in Slate, which is basically a container element
 // wrapping some content-editable text.
 const Leaf = ({
-  attributes,
-  children,
-  leaf,
-  annotations,
-}: RenderLeafProps & { annotations: Annotation[] }) => {
+                attributes,
+                children,
+                leaf,
+                annotations,
+              }: RenderLeafProps & { annotations: Annotation[] }) => {
   const highlightOpacity = leaf.active ? 0.6 : 0.2;
   // Get all the active annotation types at this leaf
   const activeAnnotations = Object.keys(leaf)
@@ -474,7 +516,7 @@ const Leaf = ({
   if (
     activeAnnotations.length > 0 && EXTENSIONS_BY_ANNOTATION[activeAnnotations[0]._type].view
   ) {
-    const view : AnnotationView = EXTENSIONS_BY_ANNOTATION[activeAnnotations[0]._type].view
+    const view: AnnotationView = EXTENSIONS_BY_ANNOTATION[activeAnnotations[0]._type].view
     transformedText = view(activeAnnotations[0], annotations);
   }
 
@@ -482,10 +524,10 @@ const Leaf = ({
   const blendedColor = highlightColors.reduce(
     (blended, color) =>
       normal(
-        { ...blended, a: highlightOpacity },
-        { ...color, a: highlightOpacity }
+        {...blended, a: highlightOpacity},
+        {...color, a: highlightOpacity}
       ),
-    { r: 255, g: 255, b: 255, a: 0 }
+    {r: 255, g: 255, b: 255, a: 0}
   );
 
   return (
@@ -528,20 +570,19 @@ const Leaf = ({
         `}
         ${activeAnnotationTypes.length > 0 &&
         css`
-          background-color: rgba(
-            ${blendedColor.r},
-            ${blendedColor.g},
-            ${blendedColor.b},
-            ${blendedColor.a}
-          );
+          background-color: rgba(${blendedColor.r},
+          ${blendedColor.g},
+          ${blendedColor.b},
+          ${blendedColor.a});
           padding: 0 0.2rem;
           color: black;
           text-decoration: underline;
           text-decoration-color: ${leaf.active ? `#888` : `#ccc`};
+
           &::before {
             content: ${activeAnnotationTypes
-              .map((at) => `"${at.icon} "`)
-              .join(" ")};
+                    .map((at) => `"${at.icon} "`)
+                    .join(" ")};
           }
 
           ${transformedText &&

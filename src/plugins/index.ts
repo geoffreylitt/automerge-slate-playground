@@ -5,9 +5,12 @@ export type AnnotationView = (annotation: Annotation, allAnnotations: Annotation
 
 export type ComputedProperty = (data: any) => any
 
+export type ComputedProperties = { [name: string]: ComputedProperty }
+
 export type AnnotationExtension = {
   view?: AnnotationView
-  computed?: { [name: string]: ComputedProperty }
+  computed?: ComputedProperties
+  defaults?: ComputedProperties
 }
 
 export type Plugin = {
@@ -48,7 +51,7 @@ export function getMergedExtensions(plugins: Plugin []): { [annotationType: stri
       let mergedExtension = extensionsByAnnotation[annotationType]
 
       if (!mergedExtension) {
-        mergedExtension = extensionsByAnnotation[annotationType] = { computed: {} }
+        mergedExtension = extensionsByAnnotation[annotationType] = { computed: {}, defaults: {} }
       }
 
       if (extension.view) {
@@ -60,9 +63,51 @@ export function getMergedExtensions(plugins: Plugin []): { [annotationType: stri
           mergedExtension.computed[name] = computation
         }
       }
+
+      if (extension.defaults) {
+        for (const [name, defaultComputation] of Object.entries(extension.defaults)) {
+          mergedExtension.defaults[name] = defaultComputation
+        }
+      }
     }
   })
 
   return extensionsByAnnotation
+}
+
+export function annotationWithComputedProps (data: any, extension: AnnotationExtension) : any {
+  if (!extension.computed && !extension.defaults) {
+    return data
+  }
+
+  const { computed = {}, defaults = {}} = extension
+
+  const handler = {
+    get (target: any, prop: string) {
+      if (target.hasOwnProperty(prop)) {
+        return target[prop]
+      }
+
+      const computation = computed[prop]
+
+      if (computation) {
+        return computation(annotationWithComputedProps(data, extension))
+      }
+
+      const defaultComputation = defaults[prop];
+
+      if (defaultComputation) {
+        return defaultComputation(annotationWithComputedProps(data, extension))
+      }
+
+      return target[prop]
+    },
+
+    set () {
+      throw new Error('invalid mutation')
+    }
+  }
+
+  return new Proxy(data, handler);
 }
 

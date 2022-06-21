@@ -34,7 +34,17 @@ export const ANNOTATION_TYPES: AnnotationType[] = [
     _type: DURATION_TYPE,
     icon: "🕓",
     color: { r: 50, g: 250, b: 50 },
-    visibleFields: ["text","durationInSeconds"],
+    visibleFields: [
+      "text",
+      "totalSeconds",
+      "remainingSeconds",
+      "isRunning",
+      "isInProgress",
+      "isFinished",
+      "isPaused",
+      "minutesDigits",
+      "secondsDigits",
+    ],
   },
   {
     _type: "Step",
@@ -52,4 +62,3 @@ export const ANNOTATION_TYPES: AnnotationType[] = [
     color: { r: 16, g: 176, b: 165 },
   },
 ];
-
