@@ -111,6 +111,13 @@ const HOTKEYS = {
   "mod+5": ANNOTATION_TYPES[4]._type,
   "mod+6": ANNOTATION_TYPES[5]._type,
   "mod+7": ANNOTATION_TYPES[6]._type,
+  "ctrl+1": ANNOTATION_TYPES[0]._type,
+  "ctrl+2": ANNOTATION_TYPES[1]._type,
+  "ctrl+3": ANNOTATION_TYPES[2]._type,
+  "ctrl+4": ANNOTATION_TYPES[3]._type,
+  "ctrl+5": ANNOTATION_TYPES[4]._type,
+  "ctrl+6": ANNOTATION_TYPES[5]._type,
+  "ctrl+7": ANNOTATION_TYPES[6]._type,
 };
 
 const AnnotateButton = ({
