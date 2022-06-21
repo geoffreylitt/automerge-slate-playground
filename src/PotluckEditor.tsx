@@ -476,6 +476,9 @@ const Annotations = ({
   );
 };
 
+// This is where we define how an annotation is rendered.
+// We style the "leaf" element in Slate, which is basically a container element
+// wrapping some content-editable text.
 const Leaf = ({
   attributes,
   children,
@@ -557,6 +560,7 @@ const Leaf = ({
             ${blendedColor.b},
             ${blendedColor.a}
           );
+          padding: 0 0.2rem;
           color: black;
           text-decoration: underline;
           text-decoration-color: ${leaf.active ? `#888` : `#ccc`};
@@ -569,10 +573,11 @@ const Leaf = ({
           ${transformedText &&
           css`
             &::after {
-              content: "${transformedText}";
-              font-weight: bold;
-              margin-left: 10px;
-              background-color: white;
+              content: "→ ${transformedText}";
+              padding: 0 0.2rem;
+              margin-left: 3px;
+              background-color: #cae3ff;
+              border-radius: 5px;
             }
           `}
         `}
