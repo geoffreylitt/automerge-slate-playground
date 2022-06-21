@@ -857,6 +857,11 @@ flux@^4.0.1:
     fbemitter "^3.0.0"
     fbjs "^3.0.0"
 
+format-quantity@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/format-quantity/-/format-quantity-1.1.0.tgz#1340e4060776ab3a64f906d8a5757d9171dd8384"
+  integrity sha512-R6T5ySreqgdIja5UPEBNKJ2uPFR6sEuk1qvvxC4fR4f5m7yiy5M1/CS+zUC7/3HHGr9awNiaKqsudVCGpOebTw==
+
 fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"

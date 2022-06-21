@@ -4,6 +4,7 @@
 import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
+import { formatQuantity } from "format-quantity";
 
 import {
   createEditor,
@@ -76,7 +77,9 @@ const getScaleFactor = (annotations: Annotation[]): number | undefined => {
   if (scaleAnnotations.length === 0) {
     return undefined;
   }
-  return scaleAnnotations[0]!.data.scaleFactor;
+  const result = scaleAnnotations[0]!.data.scaleFactor;
+  console.log({ result });
+  return result;
 };
 
 const ANNOTATION_TYPES: AnnotationType[] = [
@@ -94,7 +97,9 @@ const ANNOTATION_TYPES: AnnotationType[] = [
         return undefined;
       }
       // A hardcoded transformation function that scales by 2x
-      return `${annotation.data.quantity * 2} ${annotation.data.unitPlural}`;
+      return `${formatQuantity(annotation.data.quantity * scaleFactor, true)} ${
+        annotation.data.unitPlural
+      }`;
     },
   },
   {
