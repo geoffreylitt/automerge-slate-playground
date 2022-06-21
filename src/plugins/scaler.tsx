@@ -1,3 +1,4 @@
+import React from 'react';
 import {formatQuantity} from 'format-quantity';
 import {getTextOfAnnotation, Plugin} from './index';
 import {Annotation, MarkdownDoc} from '../slate-automerge';
@@ -28,15 +29,15 @@ const scalerPlugin: Plugin = {
 
   annotations: {
     [INGREDIENT_TYPE]: {
-      view: (annotation: Annotation, allAnnotations: Annotation[]) => {
+      view: ({quantity, unitPlural}, allAnnotations: Annotation[]) => {
         const scaleFactor = getScaleFactor(allAnnotations);
         if (scaleFactor === undefined) {
           return undefined;
         }
         // A hardcoded transformation function that scales by 2x
-        return `${formatQuantity(annotation.data.quantity * scaleFactor, true)} ${
-          annotation.data.unitPlural
-        }`;
+        return (
+          `→ ${formatQuantity(quantity * scaleFactor, true)} ${unitPlural}`
+        );
       }
     }
   }

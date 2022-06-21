@@ -1,7 +1,6 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
-
-import {useCallback, useContext, useEffect, useMemo, useState} from "react";
+import React, {useCallback, useContext, useEffect, useMemo, useState} from "react";
 import {jsx, css} from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
 import {formatQuantity} from "format-quantity";
@@ -9,6 +8,7 @@ import scalerPlugin from "./plugins/scaler";
 import ingredientsPlugin from "./plugins/ingredients";
 import timerPlugin from './plugins/timer';
 import {AnnotationView, ComputedProperties, getMergedExtensions, Plugin, annotationWithComputedProps} from './plugins';
+import { isString } from 'lodash'
 
 import {
   createEditor,
@@ -490,6 +490,26 @@ const Annotations = ({
   );
 };
 
+function getAltView (activeAnnotations: Annotation[], annotations: Annotation[]) : JSX.Element | string {
+  if (activeAnnotations.length  === 0) {
+    return
+
+  }
+
+  const type = activeAnnotations[0]._type
+  const extension = EXTENSIONS_BY_ANNOTATION[type]
+
+  if (!extension || !extension.view) {
+    return
+  }
+
+  const annotation = activeAnnotations[0]
+  const data = annotationWithComputedProps(annotation.data, extension)
+
+  return extension.view(data, annotations)
+}
+
+
 // This is where we define how an annotation is rendered.
 // We style the "leaf" element in Slate, which is basically a container element
 // wrapping some content-editable text.
@@ -510,15 +530,9 @@ const Leaf = ({
     .map((a) => a._type)
     .map((t) => ANNOTATION_TYPES.find((t2) => t2._type === t));
 
-  let transformedText: string;
+  let altView = getAltView(activeAnnotations, annotations);
 
-  // Apply custom annotation view if some plugin defined one
-  if (
-    activeAnnotations.length > 0 && EXTENSIONS_BY_ANNOTATION[activeAnnotations[0]._type].view
-  ) {
-    const view: AnnotationView = EXTENSIONS_BY_ANNOTATION[activeAnnotations[0]._type].view
-    transformedText = view(activeAnnotations[0], annotations);
-  }
+  const isAltViewText = isString(altView)
 
   const highlightColors = activeAnnotationTypes.map((a) => a.color);
   const blendedColor = highlightColors.reduce(
@@ -585,10 +599,10 @@ const Leaf = ({
                     .join(" ")};
           }
 
-          ${transformedText &&
+          ${altView && isAltViewText &&
           css`
             &::after {
-              content: "→ ${transformedText}";
+              content: "${altView}";
               padding: 0 0.2rem;
               margin-left: 3px;
               background-color: #cae3ff;
@@ -599,6 +613,22 @@ const Leaf = ({
       `}
     >
       {children}
+
+      {altView && !isAltViewText && (
+        <>
+          {" "}
+          <div
+            contentEditable="false"
+            style={{
+              cursor: 'default',
+              color: 'gray',
+              display: 'inline-block'
+            }}>
+            {altView}
+          </div>
+        </>
+      )}
+
     </span>
   );
 };

@@ -1,3 +1,4 @@
+import React from "react"
 import {DURATION_TYPE} from '../annotations';
 import {getTextOfAnnotation, Plugin} from './index';
 import parseDuration from 'parse-duration'
@@ -28,6 +29,14 @@ const timerPlugin: Plugin = {
       defaults: {
         isRunning: () => false,
         remainingSeconds: ({ totalSeconds }) => totalSeconds
+      },
+
+      view: ({ minutesDigits, secondsDigits }) => {
+        return (
+          <div>
+            ({minutesDigits.toString().padStart('0', 2)} : {secondsDigits.toString().padStart('0', 2)} ▶️)
+          </div>
+        )
       }
     }
   }

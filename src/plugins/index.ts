@@ -1,7 +1,7 @@
 import {Annotation, getTextAtAutomergeSpan, MarkdownDoc} from "../slate-automerge"
 import {cloneDeep} from "lodash"
 
-export type AnnotationView = (annotation: Annotation, allAnnotations: Annotation[]) => string | undefined
+export type AnnotationView = (data: any, allAnnotations: Annotation[]) => JSX.Element | string | undefined
 
 export type ComputedProperty = (data: any) => any
 
@@ -75,8 +75,10 @@ export function getMergedExtensions(plugins: Plugin []): { [annotationType: stri
   return extensionsByAnnotation
 }
 
+const ENABLE_PROXY_LOG = false
+
 export function annotationWithComputedProps (data: any, extension: AnnotationExtension) : any {
-  if (!extension.computed && !extension.defaults) {
+  if (!extension || !extension.computed && !extension.defaults) {
     return data
   }
 
@@ -88,16 +90,30 @@ export function annotationWithComputedProps (data: any, extension: AnnotationExt
         return target[prop]
       }
 
+      ENABLE_PROXY_LOG && console.log('get', prop)
+
       const computation = computed[prop]
 
+      ENABLE_PROXY_LOG && console.log('computation', computation)
+
       if (computation) {
-        return computation(annotationWithComputedProps(data, extension))
+        const result = computation(annotationWithComputedProps(data, extension))
+
+        ENABLE_PROXY_LOG && console.log('=', result)
+
+        return result
       }
 
       const defaultComputation = defaults[prop];
 
+      ENABLE_PROXY_LOG && console.log('default', defaultComputation);
+
       if (defaultComputation) {
-        return defaultComputation(annotationWithComputedProps(data, extension))
+        const result = defaultComputation(annotationWithComputedProps(data, extension))
+
+        ENABLE_PROXY_LOG && console.log('=', result)
+
+        return result;
       }
 
       return target[prop]
@@ -110,4 +126,3 @@ export function annotationWithComputedProps (data: any, extension: AnnotationExt
 
   return new Proxy(data, handler);
 }
-
