@@ -61,7 +61,22 @@ type AnnotationType = {
   visibleFields?: string[];
 
   /** Given the annotation data, produce a transformed string */
-  transform?: (annotation: Annotation) => string;
+  transform?: (
+    annotation: Annotation,
+    allAnnotations: Annotation[]
+  ) => string | undefined;
+};
+
+// This is a hardcoded version of a scaling plugin.
+// Given the annotations for a doc, it returns the desired scale factor.
+const getScaleFactor = (annotations: Annotation[]): number | undefined => {
+  const scaleAnnotations = annotations.filter(
+    (a) => a._type === "Scale Factor"
+  );
+  if (scaleAnnotations.length === 0) {
+    return undefined;
+  }
+  return scaleAnnotations[0]!.data.scaleFactor;
 };
 
 const ANNOTATION_TYPES: AnnotationType[] = [
@@ -73,7 +88,11 @@ const ANNOTATION_TYPES: AnnotationType[] = [
       return parseIngredient(text, "eng");
     },
     visibleFields: ["quantity", "unit", "ingredient"],
-    transform: (annotation) => {
+    transform: (annotation, allAnnotations) => {
+      const scaleFactor = getScaleFactor(allAnnotations);
+      if (scaleFactor === undefined) {
+        return undefined;
+      }
       // A hardcoded transformation function that scales by 2x
       return `${annotation.data.quantity * 2} ${annotation.data.unitPlural}`;
     },
@@ -99,9 +118,12 @@ const ANNOTATION_TYPES: AnnotationType[] = [
     color: { r: 250, g: 50, b: 50 },
   },
   {
-    _type: "Servings",
+    _type: "Scale Factor",
     icon: "🍴",
     color: { r: 65, g: 155, b: 204 },
+    // We take advantage of a little hack here for convenience:
+    // parseFloat will turn "2x" into the number 2.
+    preprocess: (text: string) => ({ scaleFactor: parseFloat(text) }),
   },
   {
     _type: "Tag",
@@ -499,9 +521,14 @@ const Leaf = ({
   let transformedText: string;
 
   // Run the first annotation's transform function on the text
-  if (activeAnnotations.length > 0) {
-    transformedText = activeAnnotationTypes[0].transform(activeAnnotations[0]);
-    console.log({ transformedText });
+  if (
+    activeAnnotations.length > 0 &&
+    activeAnnotationTypes[0].transform !== undefined
+  ) {
+    transformedText = activeAnnotationTypes[0].transform(
+      activeAnnotations[0],
+      annotations
+    );
   }
 
   const highlightColors = activeAnnotationTypes.map((a) => a.color);
