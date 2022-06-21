@@ -8,7 +8,7 @@ import { formatQuantity } from "format-quantity";
 import scalerPlugin from "./plugins/scaler";
 import ingredientsPlugin from "./plugins/ingredients";
 import timerPlugin from './plugins/timer';
-import {AnnotationView, getAlternativeViewsByAnnotation, Plugin} from './plugins';
+import {AnnotationView, getMergedExtensions, Plugin} from './plugins';
 
 import {
   createEditor,
@@ -65,7 +65,7 @@ const PLUGINS : Plugin[] = [
   timerPlugin
 ]
 
-const VIEWS_BY_ANNOTATION = getAlternativeViewsByAnnotation(PLUGINS)
+const EXTENSIONS_BY_ANNOTATION = getMergedExtensions(PLUGINS)
 
 const HOTKEYS = {
   "mod+1": ANNOTATION_TYPES[0]._type,
@@ -470,11 +470,11 @@ const Leaf = ({
 
   let transformedText: string;
 
-  // Apply the first annotation's view
+  // Apply custom annotation view if some plugin defined one
   if (
-    activeAnnotations.length > 0 && VIEWS_BY_ANNOTATION[activeAnnotations[0]._type]
+    activeAnnotations.length > 0 && EXTENSIONS_BY_ANNOTATION[activeAnnotations[0]._type].view
   ) {
-    const view : AnnotationView = VIEWS_BY_ANNOTATION[activeAnnotations[0]._type][0]
+    const view : AnnotationView = EXTENSIONS_BY_ANNOTATION[activeAnnotations[0]._type].view
     transformedText = view(activeAnnotations[0], annotations);
   }
 

@@ -33,29 +33,36 @@ export function applyPluginTransforms(plugins: Plugin [], doc: MarkdownDoc, anno
   return annotations
 }
 
-export function getAlternativeViewsByAnnotation(plugins: Plugin []): { [annotationType: string]: AnnotationView[] } {
-  const alternativeViewsByAnnotation: { [annotationType: string]: AnnotationView[] } = {}
+// todo: handle conflicting computed properties / views
+// currently new plugins override previous plugins
+
+export function getMergedExtensions(plugins: Plugin []): { [annotationType: string]: AnnotationExtension } {
+  const extensionsByAnnotation: { [annotationType: string]: AnnotationExtension } = {}
 
   plugins.forEach(({annotations}, index) => {
     if (!annotations) {
       return
     }
 
-    for (const [type, extension] of Object.entries(annotations)) {
-      if (!extension.view) {
-        continue
+    for (const [annotationType, extension] of Object.entries(annotations)) {
+      let mergedExtension = extensionsByAnnotation[annotationType]
+
+      if (!mergedExtension) {
+        mergedExtension = extensionsByAnnotation[annotationType] = { computed: {} }
       }
 
-      let group = alternativeViewsByAnnotation[type]
-
-      if (!group) {
-        group = alternativeViewsByAnnotation[type] = []
+      if (extension.view) {
+       mergedExtension.view = extension.view
       }
 
-      group.push(extension.view)
+      if (extension.computed) {
+        for (const [name, computation] of Object.entries(extension.computed)) {
+          mergedExtension.computed[name] = computation
+        }
+      }
     }
   })
 
-  return alternativeViewsByAnnotation
+  return extensionsByAnnotation
 }
 
