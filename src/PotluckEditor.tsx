@@ -59,6 +59,9 @@ type AnnotationType = {
   icon: string;
   preprocess?: (text: string) => any;
   visibleFields?: string[];
+
+  /** Given the annotation data, produce a transformed string */
+  transform?: (annotation: Annotation) => string;
 };
 
 const ANNOTATION_TYPES: AnnotationType[] = [
@@ -70,6 +73,10 @@ const ANNOTATION_TYPES: AnnotationType[] = [
       return parseIngredient(text, "eng");
     },
     visibleFields: ["quantity", "unit", "ingredient"],
+    transform: (annotation) => {
+      // A hardcoded transformation function that scales by 2x
+      return `${annotation.data.quantity * 2} ${annotation.data.unitPlural}`;
+    },
   },
   {
     _type: "Ingredient Quantity",
@@ -184,7 +191,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   ];
 
   const renderLeaf = useCallback(
-    (props) => <Leaf {...props} />,
+    (props) => <Leaf {...props} annotations={docSpans} />,
     [docSpans, activeAnnotationId]
   );
 
@@ -280,7 +287,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
         ranges.push({
           ...slateRangeFromAutomergeSpan(docSpan.range),
           highlighted: true,
-          [`annotation-${docSpan._type}`]: true,
+          [`annotation::${docSpan.id}`]: true,
           active: activeAnnotationId === docSpan.id,
         });
       }
@@ -469,13 +476,30 @@ const Annotations = ({
   );
 };
 
-const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
+const Leaf = ({
+  attributes,
+  children,
+  leaf,
+  annotations,
+}: RenderLeafProps & { annotations: Annotation[] }) => {
   const highlightOpacity = leaf.active ? 0.6 : 0.2;
   // Get all the active annotation types at this leaf
-  const activeAnnotationTypes = Object.keys(leaf)
-    .filter((k) => k.startsWith("annotation-"))
-    .map((k) => k.split("-")[1])
-    .map((typeName) => ANNOTATION_TYPES.find((t) => t._type === typeName));
+  const activeAnnotations = Object.keys(leaf)
+    .filter((k) => k.startsWith("annotation::"))
+    .map((k) => k.split("::")[1])
+    .map((id) => annotations.find((a) => a.id === id));
+
+  const activeAnnotationTypes = activeAnnotations
+    .map((a) => a._type)
+    .map((t) => ANNOTATION_TYPES.find((t2) => t2._type === t));
+
+  let transformedText: string;
+
+  // Run the first annotation's transform function on the text
+  if (activeAnnotations.length > 0) {
+    transformedText = activeAnnotationTypes[0].transform(activeAnnotations[0]);
+    console.log({ transformedText });
+  }
 
   const highlightColors = activeAnnotationTypes.map((a) => a.color);
   const blendedColor = highlightColors.reduce(
@@ -541,6 +565,16 @@ const Leaf = ({ attributes, children, leaf }: RenderLeafProps) => {
               .map((at) => `"${at.icon} "`)
               .join(" ")};
           }
+
+          ${transformedText &&
+          css`
+            &::after {
+              content: "${transformedText}";
+              font-weight: bold;
+              margin-left: 10px;
+              background-color: white;
+            }
+          `}
         `}
       `}
     >
