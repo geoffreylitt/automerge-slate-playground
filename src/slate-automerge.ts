@@ -14,7 +14,7 @@ export type TextFormat = "bold" | "italic" | "underline";
 
 export type Annotation = {
   id: string;
-  range: AutomergeSpan;
+  range: AutomergeSpan; // { start: 10, end: 20 }
   _type: string;
   data: any;
 };

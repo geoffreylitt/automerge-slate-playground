@@ -58,7 +58,7 @@ type AnnotationType = {
   _type: string;
   color: { r: number; g: number; b: number };
   icon: string;
-  preprocess?: (text: string) => any;
+  parseStructuredData?: (text: string) => any;
   visibleFields?: string[];
 
   /** Given the annotation data, produce a transformed string */
@@ -87,7 +87,7 @@ const ANNOTATION_TYPES: AnnotationType[] = [
     _type: "Ingredient",
     color: { r: 253, g: 253, b: 85 },
     icon: "🥕",
-    preprocess: (text: string) => {
+    parseStructuredData: (text: string) => {
       return parseIngredient(text, "eng");
     },
     visibleFields: ["quantity", "unit", "ingredient"],
@@ -128,7 +128,7 @@ const ANNOTATION_TYPES: AnnotationType[] = [
     color: { r: 65, g: 155, b: 204 },
     // We take advantage of a little hack here for convenience:
     // parseFloat will turn "2x" into the number 2.
-    preprocess: (text: string) => ({ scaleFactor: parseFloat(text) }),
+    parseStructuredData: (text: string) => ({ scaleFactor: parseFloat(text) }),
   },
   {
     _type: "Tag",
@@ -200,6 +200,22 @@ const AnnotateButton = ({
   );
 };
 
+// Parse the structured data for an annotation
+const parseDataForAnnotation = (annotation: Annotation, doc: MarkdownDoc) => {
+  const parser = ANNOTATION_TYPES.find(
+    (t) => t._type === annotation._type
+  )?.parseStructuredData;
+
+  if (parser === undefined) {
+    return {};
+  }
+  const textInAnnotation = getTextAtAutomergeSpan(
+    doc.content,
+    annotation.range
+  );
+  return parser(textInAnnotation);
+};
+
 export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
@@ -228,9 +244,17 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
       withHistory(withReact(createEditor())),
       (op: Operation) => {
         if (op.type === "insert_text") {
-          changeDoc((doc: MarkdownDoc) =>
-            doc.content.insertAt(op.offset, op.text)
-          );
+          changeDoc((doc: MarkdownDoc) => {
+            doc.content.insertAt(op.offset, op.text);
+
+            // TODO: We want to re-parse structured data for all the annotations
+            // after editing the text contents of the document.
+            // But it causes a bug related to Automerge edit lifecycles,
+            // so commented out for now.
+            // for (const annotation of doc.annotations) {
+            //   annotation.data = parseDataForAnnotation(annotation, doc);
+            // }
+          });
         }
         if (op.type === "remove_text") {
           changeDoc((doc: MarkdownDoc) =>
@@ -249,20 +273,19 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
         doc.content,
         currentSelection
       );
-      const preprocessor = ANNOTATION_TYPES.find(
-        (t) => t._type === annotationType
-      )?.preprocess;
-      const annotationData =
-        preprocessor !== undefined
-          ? preprocessor(getTextAtAutomergeSpan(doc.content, automergeSpan))
-          : {};
 
-      doc.annotations.push({
+      const draftAnnotation = {
         id: uuidv4(),
         range: automergeSpan,
         _type: annotationType,
-        data: annotationData,
-      });
+        data: {},
+      };
+
+      const annotationData = parseDataForAnnotation(draftAnnotation, doc);
+
+      const annotation = { ...draftAnnotation, data: annotationData };
+
+      doc.annotations.push(annotation);
     });
 
     // move the cursor to the end of the current selection
