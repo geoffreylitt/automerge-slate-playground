@@ -217,6 +217,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
     [docSpans, activeAnnotationId]
   );
 
+  // Set up a Slate editor instance w/ some custom Automerge integration stuff
   const editor = useMemo(() => {
     return withOpHandler(
       withHistory(withReact(createEditor())),
@@ -235,6 +236,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
     );
   }, []);
 
+  // Add a new annotation to the currently selected text
   const addAnnotation = (annotationType: string) => {
     const currentSelection = selection;
     changeDoc((doc: MarkdownDoc) => {
@@ -284,6 +286,8 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
     setActiveAnnotationId(activeCommentId);
   }, [selection]);
 
+  // Logic for telling Slate what formatting should apply to each span of text.
+  // Used for Markdown preview + annotating spans
   const decorate = useCallback(
     ([node, path]) => {
       const ranges: Range[] = [];
