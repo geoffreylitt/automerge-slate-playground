@@ -5,7 +5,9 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
 import { formatQuantity } from "format-quantity";
-import { ingredientsPlugin, Plugin} from './plugins';
+import scalerPlugin from './plugins/scaler';
+import ingredientsPlugin from './plugins/ingredients';
+import {AnnotationView, getAlternativeViewsByAnnotation, Plugin} from './plugins';
 
 import {
   createEditor,
@@ -57,8 +59,11 @@ type MarkdownEditorProps = {
 };
 
 const PLUGINS : Plugin[] = [
-  ingredientsPlugin
+  ingredientsPlugin,
+  scalerPlugin
 ]
+
+const VIEWS_BY_ANNOTATION = getAlternativeViewsByAnnotation(PLUGINS)
 
 const HOTKEYS = {
   "mod+1": ANNOTATION_TYPES[0]._type,
@@ -463,15 +468,12 @@ const Leaf = ({
 
   let transformedText: string;
 
-  // Run the first annotation's transform function on the text
+  // Apply the first annotation's view
   if (
-    activeAnnotations.length > 0 &&
-    activeAnnotationTypes[0].transform !== undefined
+    activeAnnotations.length > 0 && VIEWS_BY_ANNOTATION[activeAnnotations[0]._type]
   ) {
-    transformedText = activeAnnotationTypes[0].transform(
-      activeAnnotations[0],
-      annotations
-    );
+    const view : AnnotationView = VIEWS_BY_ANNOTATION[activeAnnotations[0]._type][0]
+    transformedText = view(activeAnnotations[0], annotations);
   }
 
   const highlightColors = activeAnnotationTypes.map((a) => a.color);

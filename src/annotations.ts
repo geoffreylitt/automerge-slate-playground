@@ -6,32 +6,11 @@ export type AnnotationType = {
   _type: string;
   color: { r: number; g: number; b: number };
   icon: string;
-  parseStructuredData?: (text: string) => any;
   visibleFields?: string[];
-
-  /** Given the annotation data, produce a transformed string */
-  transform?: (
-    annotation: Annotation,
-    allAnnotations: Annotation[]
-  ) => string | undefined;
-};
-
-
-// This is a hardcoded version of a scaling plugin.
-// Given the annotations for a doc, it returns the desired scale factor.
-const getScaleFactor = (annotations: Annotation[]): number | undefined => {
-  const scaleAnnotations = annotations.filter(
-    (a) => a._type === "Scale Factor"
-  );
-  if (scaleAnnotations.length === 0) {
-    return undefined;
-  }
-  const result = scaleAnnotations[0]!.data.scaleFactor;
-  console.log({ result });
-  return result;
 };
 
 export const INGREDIENT_TYPE = "Ingredient"
+export const SCALE_FACTOR_TYPE = "Scale Factor"
 
 export const ANNOTATION_TYPES: AnnotationType[] = [
   {
@@ -39,16 +18,6 @@ export const ANNOTATION_TYPES: AnnotationType[] = [
     color: { r: 253, g: 253, b: 85 },
     icon: "🥕",
     visibleFields: ["quantity", "unit", "ingredient"],
-    transform: (annotation, allAnnotations) => {
-      const scaleFactor = getScaleFactor(allAnnotations);
-      if (scaleFactor === undefined) {
-        return undefined;
-      }
-      // A hardcoded transformation function that scales by 2x
-      return `${formatQuantity(annotation.data.quantity * scaleFactor, true)} ${
-        annotation.data.unitPlural
-      }`;
-    },
   },
   {
     _type: "Ingredient Quantity",
@@ -71,12 +40,9 @@ export const ANNOTATION_TYPES: AnnotationType[] = [
     color: { r: 250, g: 50, b: 50 },
   },
   {
-    _type: "Scale Factor",
+    _type: SCALE_FACTOR_TYPE,
     icon: "🍴",
-    color: { r: 65, g: 155, b: 204 },
-    // We take advantage of a little hack here for convenience:
-    // parseFloat will turn "2x" into the number 2.
-    parseStructuredData: (text: string) => ({ scaleFactor: parseFloat(text) }),
+    color: { r: 65, g: 155, b: 204 }
   },
   {
     _type: "Tag",
