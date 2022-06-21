@@ -70,7 +70,7 @@ import { v4 as uuidv4 } from "uuid";
 const DEFAULT_TEXT = `
 # Chili
 
-Bring 2 lb low fat (~90/10) ground chuck beef to room temperature, and season with 1 Tbl onion powder, 2 tsp salt, and 3/8 tsp garlic powder.
+Bring 2 pounds low fat (~90/10) ground chuck beef to room temperature, and season with 1 Tbsp onion powder, 2 tsp salt, and 3/8 tsp garlic powder.
 
 Warm bacon fat or cooking oil in large pot over high heat, and add seasoned meat. Break meat into small pieces, and stir until meat is browned and liquid becomes gravy-like.
 
