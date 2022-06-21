@@ -6,9 +6,9 @@
   "scripts": {
     "build-automerge": "cd node_modules/automerge && npm install && npm run build",
     "build": "yarn run build-automerge && node build.js",
-    "start:app": "node build.js -w",
-    "start:styles": "npx tailwindcss -i ./src/styles/app.css -o ./public/app.css --watch",
-    "start": "concurrently -g -n start: red,green yarn:start:*",
+    "start-app": "node build.js -w",
+    "start-styles": "npx tailwindcss -i ./src/styles/app.css -o ./public/app.css --watch",
+    "start": "concurrently -n w: yarn:start-*",
     "test": "ts-mocha test/*.ts"
   },
   "author": "",
