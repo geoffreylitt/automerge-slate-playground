@@ -6,7 +6,9 @@
   "scripts": {
     "build-automerge": "cd node_modules/automerge && npm install && npm run build",
     "build": "yarn run build-automerge && node build.js",
-    "start": "node build.js -w",
+    "start:app": "node build.js -w",
+    "start:styles": "npx tailwindcss -i ./src/styles/app.css -o ./public/app.css --watch",
+    "start": "concurrently -g -n start: red,green npm:start:*",
     "test": "ts-mocha test/*.ts"
   },
   "author": "",
@@ -16,10 +18,12 @@
     "@types/mocha": "^8.2.2",
     "@types/react": "^17.0.0",
     "@types/react-dom": "^17.0.0",
+    "concurrently": "^7.2.2",
     "eslint": "^7.14.0",
     "estrella": "^1.3.0",
     "mocha": "^8.4.0",
     "serve-http": "^1.0.6",
+    "tailwindcss": "^3.1.3",
     "ts-mocha": "^8.0.0",
     "typescript": "^4.1.2"
   },
