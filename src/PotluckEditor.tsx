@@ -5,6 +5,7 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
 import { formatQuantity } from "format-quantity";
+import { ingredientsPlugin, Plugin} from './plugins';
 
 import {
   createEditor,
@@ -31,9 +32,10 @@ import {
 import { normal } from "color-blend";
 import isHotkey from "is-hotkey";
 import { pick, pickBy, sortBy, uniq } from "lodash";
-import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
 import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
+import { ANNOTATION_TYPES } from "./annotations";
+import {applyPluginTransforms} from './plugins';
 registerAllModules();
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
@@ -54,88 +56,9 @@ type MarkdownEditorProps = {
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
 };
 
-type AnnotationType = {
-  _type: string;
-  color: { r: number; g: number; b: number };
-  icon: string;
-  parseStructuredData?: (text: string) => any;
-  visibleFields?: string[];
-
-  /** Given the annotation data, produce a transformed string */
-  transform?: (
-    annotation: Annotation,
-    allAnnotations: Annotation[]
-  ) => string | undefined;
-};
-
-// This is a hardcoded version of a scaling plugin.
-// Given the annotations for a doc, it returns the desired scale factor.
-const getScaleFactor = (annotations: Annotation[]): number | undefined => {
-  const scaleAnnotations = annotations.filter(
-    (a) => a._type === "Scale Factor"
-  );
-  if (scaleAnnotations.length === 0) {
-    return undefined;
-  }
-  const result = scaleAnnotations[0]!.data.scaleFactor;
-  console.log({ result });
-  return result;
-};
-
-const ANNOTATION_TYPES: AnnotationType[] = [
-  {
-    _type: "Ingredient",
-    color: { r: 253, g: 253, b: 85 },
-    icon: "🥕",
-    parseStructuredData: (text: string) => {
-      return parseIngredient(text, "eng");
-    },
-    visibleFields: ["quantity", "unit", "ingredient"],
-    transform: (annotation, allAnnotations) => {
-      const scaleFactor = getScaleFactor(allAnnotations);
-      if (scaleFactor === undefined) {
-        return undefined;
-      }
-      // A hardcoded transformation function that scales by 2x
-      return `${formatQuantity(annotation.data.quantity * scaleFactor, true)} ${
-        annotation.data.unitPlural
-      }`;
-    },
-  },
-  {
-    _type: "Ingredient Quantity",
-    icon: "🥄",
-    color: { r: 204, g: 65, b: 135 },
-  },
-  {
-    _type: "Ingredient Name",
-    icon: "🍅",
-    color: { r: 204, g: 98, b: 65 },
-  },
-  {
-    _type: "Duration",
-    icon: "🕓",
-    color: { r: 50, g: 250, b: 50 },
-  },
-  {
-    _type: "Step",
-    icon: "🔢",
-    color: { r: 250, g: 50, b: 50 },
-  },
-  {
-    _type: "Scale Factor",
-    icon: "🍴",
-    color: { r: 65, g: 155, b: 204 },
-    // We take advantage of a little hack here for convenience:
-    // parseFloat will turn "2x" into the number 2.
-    parseStructuredData: (text: string) => ({ scaleFactor: parseFloat(text) }),
-  },
-  {
-    _type: "Tag",
-    icon: "🏷",
-    color: { r: 16, g: 176, b: 165 },
-  },
-];
+const PLUGINS : Plugin[] = [
+  ingredientsPlugin
+]
 
 const HOTKEYS = {
   "mod+1": ANNOTATION_TYPES[0]._type,
@@ -200,22 +123,6 @@ const AnnotateButton = ({
   );
 };
 
-// Parse the structured data for an annotation
-const parseDataForAnnotation = (annotation: Annotation, doc: MarkdownDoc) => {
-  const parser = ANNOTATION_TYPES.find(
-    (t) => t._type === annotation._type
-  )?.parseStructuredData;
-
-  if (parser === undefined) {
-    return {};
-  }
-  const textInAnnotation = getTextAtAutomergeSpan(
-    doc.content,
-    annotation.range
-  );
-  return parser(textInAnnotation);
-};
-
 export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
@@ -274,18 +181,22 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
         currentSelection
       );
 
-      const draftAnnotation = {
+
+      // todo: reapply transformation whenever annotations change instead of calling transform at creation
+      const annotations : Annotation[] = [{
         id: uuidv4(),
         range: automergeSpan,
         _type: annotationType,
         data: {},
-      };
+      }];
 
-      const annotationData = parseDataForAnnotation(draftAnnotation, doc);
+      const transformedAnnotations = applyPluginTransforms(PLUGINS, doc, annotations)
 
-      const annotation = { ...draftAnnotation, data: annotationData };
+      for (const annotation of transformedAnnotations) {
+        console.log('add annotation', annotation)
 
-      doc.annotations.push(annotation);
+        doc.annotations.push(annotation);
+      }
     });
 
     // move the cursor to the end of the current selection
