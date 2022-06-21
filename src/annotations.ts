@@ -11,6 +11,7 @@ export type AnnotationType = {
 
 export const INGREDIENT_TYPE = "Ingredient"
 export const SCALE_FACTOR_TYPE = "Scale Factor"
+export const DURATION_TYPE = "Duration"
 
 export const ANNOTATION_TYPES: AnnotationType[] = [
   {
@@ -30,9 +31,10 @@ export const ANNOTATION_TYPES: AnnotationType[] = [
     color: { r: 204, g: 98, b: 65 },
   },
   {
-    _type: "Duration",
+    _type: DURATION_TYPE,
     icon: "🕓",
     color: { r: 50, g: 250, b: 50 },
+    visibleFields: ["text","durationInSeconds"],
   },
   {
     _type: "Step",

@@ -3,12 +3,15 @@ import {cloneDeep} from "lodash"
 
 export type AnnotationView = (annotation: Annotation, allAnnotations: Annotation[]) => string | undefined
 
+export type ComputedProperty = (data: any) => any
+
 export type AnnotationExtension = {
   view?: AnnotationView
+  computed?: { [name: string]: ComputedProperty }
 }
 
 export type Plugin = {
-  transform?: (annotations: Annotation[], doc: MarkdownDoc) => void
+  transform?: (annotations: Annotation[], doc: MarkdownDoc) => void,
   annotations?: {
     [annotationType: string]: AnnotationExtension
   }
@@ -30,8 +33,8 @@ export function applyPluginTransforms(plugins: Plugin [], doc: MarkdownDoc, anno
   return annotations
 }
 
-export function getAlternativeViewsByAnnotation(plugins: Plugin []) : {[annotationType: string]: AnnotationView[]} {
-  const alternativeViewsByAnnotation : {[annotationType: string]: AnnotationView[]} = {}
+export function getAlternativeViewsByAnnotation(plugins: Plugin []): { [annotationType: string]: AnnotationView[] } {
+  const alternativeViewsByAnnotation: { [annotationType: string]: AnnotationView[] } = {}
 
   plugins.forEach(({annotations}, index) => {
     if (!annotations) {
@@ -55,3 +58,4 @@ export function getAlternativeViewsByAnnotation(plugins: Plugin []) : {[annotati
 
   return alternativeViewsByAnnotation
 }
+

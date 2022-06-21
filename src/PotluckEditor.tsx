@@ -5,8 +5,9 @@ import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
 import { formatQuantity } from "format-quantity";
-import scalerPlugin from './plugins/scaler';
-import ingredientsPlugin from './plugins/ingredients';
+import scalerPlugin from "./plugins/scaler";
+import ingredientsPlugin from "./plugins/ingredients";
+import timerPlugin from './plugins/timer';
 import {AnnotationView, getAlternativeViewsByAnnotation, Plugin} from './plugins';
 
 import {
@@ -60,7 +61,8 @@ type MarkdownEditorProps = {
 
 const PLUGINS : Plugin[] = [
   ingredientsPlugin,
-  scalerPlugin
+  scalerPlugin,
+  timerPlugin
 ]
 
 const VIEWS_BY_ANNOTATION = getAlternativeViewsByAnnotation(PLUGINS)

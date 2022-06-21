@@ -7,7 +7,7 @@ const ingredientsPlugin: Plugin = {
   transform(annotations: Annotation[], doc: MarkdownDoc) {
     for (const annotation of annotations) {
       if (annotation._type === INGREDIENT_TYPE) {
-        const text = getTextOfAnnotation(doc, annotation) // todo: make this a computed property
+        const text = getTextOfAnnotation(doc, annotation)
         annotation.data = parseIngredient(text, "eng");
       }
     }
