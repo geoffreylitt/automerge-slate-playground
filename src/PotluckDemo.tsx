@@ -1,17 +1,21 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
 
-import {jsx, css} from "@emotion/react";
-import {useAutomergeDoc, useObservable, useObservableListener} from "./hooks";
-import {MarkdownDoc} from "./slate-automerge";
+import { jsx, css } from "@emotion/react";
+import { useAutomergeDoc, useObservable, useObservableListener } from "./hooks";
+import { MarkdownDoc } from "./slate-automerge";
 import Automerge from "automerge";
 import PotluckEditor from "./PotluckEditor";
-import {DURATION_TYPE, INGREDIENT_TYPE, SCALE_FACTOR_TYPE} from "./annotations";
+import {
+  DURATION_TYPE,
+  INGREDIENT_TYPE,
+  SCALE_FACTOR_TYPE,
+} from "./annotations";
 import ingredientsPlugin from "./plugins/ingredients";
 import scalerPlugin from "./plugins/scaler";
 import timerPlugin from "./plugins/timer";
-import {useState, useRef} from "react"
-import {getMergedExtensions, useEffectHandlers} from "./plugins";
+import { useState, useRef } from "react";
+import { getMergedExtensions, useEffectHandlers } from "./plugins";
 
 // const DEFAULT_TEXT = `
 // # Thai Peanut Noodle Bowls with Spicy Lime Tofu
@@ -109,27 +113,31 @@ const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
   { start: 515, end: 544, type: INGREDIENT_TYPE },
   { start: 550, end: 573, type: INGREDIENT_TYPE },
   { start: 1164, end: 1166, type: SCALE_FACTOR_TYPE },
-  { start: 725, end: 732, type: DURATION_TYPE }
+  { start: 725, end: 732, type: DURATION_TYPE },
 ];
 
 const SHOW_DATA_DUMP = false;
 
 export default function PotluckDemo() {
   // can't use automerge currently because plugins contain function values
-  const [plugins, setPlugins] = useState([ingredientsPlugin, scalerPlugin, timerPlugin]);
-  const extensionsByType = getMergedExtensions(plugins)
+  const [plugins, setPlugins] = useState([
+    ingredientsPlugin,
+    scalerPlugin,
+    timerPlugin,
+  ]);
+  const extensionsByType = getMergedExtensions(plugins);
 
-  const observable = useObservable()
+  const observable = useObservable();
 
   const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>({
     initialDoc: {
       content: new Automerge.Text(DEFAULT_TEXT),
       annotations: [],
     },
-    observable
+    observable,
   });
 
-  useEffectHandlers({ doc, changeDoc, observable, extensionsByType })
+  useEffectHandlers({ doc, changeDoc, observable, extensionsByType });
 
   return (
     <div className="max-w-6xl p-4">
@@ -142,13 +150,15 @@ export default function PotluckDemo() {
         defaultAnnotations={DEFAULT_ANNOTATIONS}
       />
 
-      {SHOW_DATA_DUMP && <pre>
-        {JSON.stringify(
-          doc.annotations.filter(({_type}) => _type === DURATION_TYPE),
-          null,
-          2
-        )}
-      </pre>}
+      {SHOW_DATA_DUMP && (
+        <pre>
+          {JSON.stringify(
+            doc.annotations.filter(({ _type }) => _type === DURATION_TYPE),
+            null,
+            2
+          )}
+        </pre>
+      )}
     </div>
   );
 }

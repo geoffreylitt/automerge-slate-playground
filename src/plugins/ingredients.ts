@@ -2,7 +2,7 @@ import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
 import { Plugin, getTextOfAnnotation } from "./index";
 import { Annotation } from "../slate-automerge";
 import { INGREDIENT_TYPE } from "../annotations";
-import Automerge from 'automerge'
+import Automerge from "automerge";
 
 const ingredientsPlugin: Plugin = {
   transform(annotations: Annotation[], text: Automerge.Text) {

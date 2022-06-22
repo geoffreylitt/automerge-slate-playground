@@ -9,7 +9,8 @@ import timerPlugin from "./plugins/timer";
 import {
   getMergedExtensions,
   Plugin,
-  annotationWithComputedProps, AnnotationExtension,
+  annotationWithComputedProps,
+  AnnotationExtension,
 } from "./plugins";
 import { isString } from "lodash";
 import Automerge from "automerge";
@@ -105,7 +106,7 @@ type PotluckEditorProps = {
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
   plugins: Plugin[];
   changePlugins: (plugins: Plugin[]) => void;
-  extensionsByType: {[type: string]: AnnotationExtension};
+  extensionsByType: { [type: string]: AnnotationExtension };
   defaultAnnotations: DefaultAnnotationSpec[];
 };
 
@@ -210,7 +211,13 @@ export default function PotluckEditor({
   ];
 
   const renderLeaf = useCallback(
-    (props) => <Leaf {...props} annotations={annotations} extensionsByType={extensionsByType} />,
+    (props) => (
+      <Leaf
+        {...props}
+        annotations={annotations}
+        extensionsByType={extensionsByType}
+      />
+    ),
     [annotations, activeAnnotationId]
   );
 
@@ -395,11 +402,14 @@ export default function PotluckEditor({
     [annotations, activeAnnotationId]
   );
 
-  const onChangeAnnotations = useCallback((mutate) => {
-    changeDoc((doc) => {
-      mutate(doc.annotations)
-    })
-  }, [changeDoc])
+  const onChangeAnnotations = useCallback(
+    (mutate) => {
+      changeDoc((doc) => {
+        mutate(doc.annotations);
+      });
+    },
+    [changeDoc]
+  );
 
   return (
     <div
@@ -508,10 +518,10 @@ const Annotations = ({
 }: {
   text: Automerge.Text;
   annotations: Annotation[];
-  extensionsByType: {[type: string]: AnnotationExtension}
+  extensionsByType: { [type: string]: AnnotationExtension };
   activeAnnotationId: string;
   setActiveAnnotationId: (id: string) => void;
-  onChangeAnnotations: (mutation: (annotations: Annotation[]) => void) => void
+  onChangeAnnotations: (mutation: (annotations: Annotation[]) => void) => void;
 }) => {
   const annotationTypes = uniq(annotations.map((a) => a._type));
 
@@ -550,8 +560,8 @@ const Annotations = ({
 
         const columns = visibleFields.map((name) => ({
           data: name,
-          readOnly: extension?.computed[name] !== undefined
-        }))
+          readOnly: extension?.computed[name] !== undefined,
+        }));
 
         return (
           <div
@@ -582,20 +592,20 @@ const Annotations = ({
               }}
               afterChange={(changes) => {
                 if (!changes) {
-                  return
+                  return;
                 }
 
-                onChangeAnnotations((annotations : Annotation[]) => {
+                onChangeAnnotations((annotations: Annotation[]) => {
                   for (const [row, prop, oldValue, newValue] of changes) {
-                    const id = annotationsOfType[row].id
+                    const id = annotationsOfType[row].id;
 
                     const index = annotations.findIndex((annotation) => {
-                      return annotation.id === id
-                    })
+                      return annotation.id === id;
+                    });
 
-                    annotations[index].data[prop] = newValue
+                    annotations[index].data[prop] = newValue;
                   }
-                })
+                });
               }}
             />
           </div>
@@ -607,7 +617,7 @@ const Annotations = ({
 
 function getAltView(
   activeAnnotations: Annotation[],
-  extensionsByType: {[type: string]: AnnotationExtension},
+  extensionsByType: { [type: string]: AnnotationExtension },
   annotations: Annotation[]
 ): JSX.Element | string {
   if (activeAnnotations.length === 0) {
@@ -635,10 +645,10 @@ const Leaf = ({
   children,
   leaf,
   annotations,
-  extensionsByType
+  extensionsByType,
 }: RenderLeafProps & {
-  annotations: Annotation[],
-  extensionsByType: {[type: string]: AnnotationExtension}
+  annotations: Annotation[];
+  extensionsByType: { [type: string]: AnnotationExtension };
 }) => {
   const highlightOpacity = leaf.active ? 0.6 : 0.2;
   // Get all the active annotation types at this leaf
@@ -653,7 +663,7 @@ const Leaf = ({
 
   let altView = getAltView(activeAnnotations, extensionsByType, annotations);
 
-  const isAltViewText = isString(altView)
+  const isAltViewText = isString(altView);
 
   const highlightColors = activeAnnotationTypes.map((a) => a.color);
   const blendedColor = highlightColors.reduce(
@@ -673,11 +683,11 @@ const Leaf = ({
         font-weight: ${leaf.bold && "bold"};
         font-style: ${leaf.italic && "italic"};
         text-decoration: ${leaf.underlined && "underline"};
-        
+
         &:hover > .menu {
           display: inherit;
         }
-        
+
         .menu {
           position: absolute;
           display: none;
@@ -687,7 +697,7 @@ const Leaf = ({
           z-index: 10;
           border: 1px solid #ddd;
         }
-        
+
         ${leaf.title &&
         css`
           display: inline-block;
@@ -738,7 +748,8 @@ const Leaf = ({
               .join(" ")};
           }
 
-          ${altView && isAltViewText &&
+          ${altView &&
+          isAltViewText &&
           `
             &::after {
               content: "${altView}";
@@ -751,11 +762,9 @@ const Leaf = ({
         `}
       `}
     >
-      {children}{altView && !isAltViewText && (
-        <div
-          className="menu"
-          contentEditable={false}
-        >
+      {children}
+      {altView && !isAltViewText && (
+        <div className="menu" contentEditable={false}>
           {altView}
         </div>
       )}

@@ -19,7 +19,8 @@ const timerPlugin: Plugin = {
   annotations: {
     [DURATION_TYPE]: {
       computed: {
-        isInProgress: ({ remainingSeconds, totalSeconds, isRunning }) => remainingSeconds !== totalSeconds || isRunning,
+        isInProgress: ({ remainingSeconds, totalSeconds, isRunning }) =>
+          remainingSeconds !== totalSeconds || isRunning,
         isFinished: ({ remainingSeconds }) => remainingSeconds === 0,
         isPaused: ({ remainingSeconds, isRunning }) =>
           remainingSeconds > 0 && isRunning === false,
@@ -36,52 +37,55 @@ const timerPlugin: Plugin = {
 
       view: ({ minutesDigits, secondsDigits, isFinished }) => {
         return (
-          <div style={{
-            padding: '8px',
-            whiteSpace: 'nowrap',
-            color: isFinished ? 'red' : 'black'
-          }}>
-            {minutesDigits.toString().padStart(2, "0")} : {secondsDigits.toString().padStart(2, "0")}
+          <div
+            style={{
+              padding: "8px",
+              whiteSpace: "nowrap",
+              color: isFinished ? "red" : "black",
+            }}
+          >
+            {minutesDigits.toString().padStart(2, "0")} :{" "}
+            {secondsDigits.toString().padStart(2, "0")}
           </div>
-        )
+        );
       },
 
       effect: (duration) => {
-        let interval : any;
+        let interval: any;
 
         const tick = () => {
           if (duration.remainingSeconds > 0) {
-            duration.remainingSeconds = duration.remainingSeconds - 1
+            duration.remainingSeconds = duration.remainingSeconds - 1;
           } else {
-            duration.isRunning = false
+            duration.isRunning = false;
           }
-        }
+        };
 
         return {
-          onMount () {
+          onMount() {
             if (duration.isRunning) {
-              interval = setInterval(tick, 1000)
+              interval = setInterval(tick, 1000);
             }
           },
 
-          onUnmount () {
+          onUnmount() {
             clearInterval(interval);
           },
 
-          onChange (prev) {
+          onChange(prev) {
             if (prev.isRunning === duration.isRunning) {
-              return
+              return;
             }
 
             if (duration.isRunning) {
-              interval = setInterval(tick, 1000)
-              return
+              interval = setInterval(tick, 1000);
+              return;
             }
 
-            clearInterval(interval)
-          }
-        }
-      }
+            clearInterval(interval);
+          },
+        };
+      },
     },
   },
 };
