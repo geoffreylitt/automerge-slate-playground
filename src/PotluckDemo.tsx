@@ -90,7 +90,7 @@ export default function PotluckDemo() {
   });
 
   return (
-    <div className="p-4">
+    <div className="max-w-6xl p-4">
       <PotluckEditor doc={doc} changeDoc={changeDoc} />
     </div>
   );
