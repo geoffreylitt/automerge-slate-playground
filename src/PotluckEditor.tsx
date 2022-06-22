@@ -9,7 +9,7 @@ import timerPlugin from "./plugins/timer";
 import {
   getMergedExtensions,
   Plugin,
-  annotationWithComputedProps,
+  annotationWithComputedProps, AnnotationExtension,
 } from "./plugins";
 import { isString } from "lodash";
 import Automerge from "automerge";
@@ -103,12 +103,19 @@ Prism.languages.markdown = Prism.languages.extend("markup", {}), Prism.languages
 type PotluckEditorProps = {
   doc: MarkdownDoc;
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
+  plugins: Plugin[];
+  changePlugins: (plugins: Plugin[]) => void;
+  extensionsByType: {[type: string]: AnnotationExtension};
   defaultAnnotations: DefaultAnnotationSpec[];
 };
+
+/*
 
 const PLUGINS: Plugin[] = [ingredientsPlugin, scalerPlugin, timerPlugin];
 
 const EXTENSIONS_BY_ANNOTATION = getMergedExtensions(PLUGINS);
+
+ */
 
 const HOTKEYS: { [key: string]: string } = {
   "mod+1": ANNOTATION_TYPES[0]._type,
@@ -180,7 +187,10 @@ const AnnotateButton = ({
 
 export default function PotluckEditor({
   doc,
+  plugins,
+  changePlugins,
   changeDoc,
+  extensionsByType,
   defaultAnnotations,
 }: PotluckEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
@@ -200,7 +210,7 @@ export default function PotluckEditor({
   ];
 
   const renderLeaf = useCallback(
-    (props) => <Leaf {...props} annotations={annotations} />,
+    (props) => <Leaf {...props} annotations={annotations} extensionsByType={extensionsByType} />,
     [annotations, activeAnnotationId]
   );
 
@@ -262,8 +272,8 @@ export default function PotluckEditor({
       ];
 
       const transformedAnnotations = applyPluginTransforms(
-        PLUGINS,
-        doc,
+        plugins,
+        doc.content,
         annotations
       );
 
@@ -480,6 +490,7 @@ export default function PotluckEditor({
           setActiveAnnotationId={setActiveAnnotationId}
           onChangeAnnotations={onChangeAnnotations}
           annotations={doc.annotations}
+          extensionsByType={extensionsByType}
           text={doc.content}
         />
       </div>
@@ -490,12 +501,14 @@ export default function PotluckEditor({
 const Annotations = ({
   text,
   annotations,
+  extensionsByType,
   activeAnnotationId,
   setActiveAnnotationId,
   onChangeAnnotations,
 }: {
   text: Automerge.Text;
   annotations: Annotation[];
+  extensionsByType: {[type: string]: AnnotationExtension}
   activeAnnotationId: string;
   setActiveAnnotationId: (id: string) => void;
   onChangeAnnotations: (mutation: (annotations: Annotation[]) => void) => void
@@ -513,7 +526,7 @@ const Annotations = ({
           annotations,
           (a) => a.range.start.index
         ).filter((a) => a._type === annotationType);
-        const extension = EXTENSIONS_BY_ANNOTATION[annotationType];
+        const extension = extensionsByType[annotationType];
         const visibleFields = annotationTypeDefinition.visibleFields ?? [
           "text",
         ];
@@ -594,6 +607,7 @@ const Annotations = ({
 
 function getAltView(
   activeAnnotations: Annotation[],
+  extensionsByType: {[type: string]: AnnotationExtension},
   annotations: Annotation[]
 ): JSX.Element | string {
   if (activeAnnotations.length === 0) {
@@ -601,7 +615,7 @@ function getAltView(
   }
 
   const type = activeAnnotations[0]._type;
-  const extension = EXTENSIONS_BY_ANNOTATION[type];
+  const extension = extensionsByType[type];
 
   if (!extension || !extension.view) {
     return;
@@ -621,7 +635,11 @@ const Leaf = ({
   children,
   leaf,
   annotations,
-}: RenderLeafProps & { annotations: Annotation[] }) => {
+  extensionsByType
+}: RenderLeafProps & {
+  annotations: Annotation[],
+  extensionsByType: {[type: string]: AnnotationExtension}
+}) => {
   const highlightOpacity = leaf.active ? 0.6 : 0.2;
   // Get all the active annotation types at this leaf
   const activeAnnotations = Object.keys(leaf)
@@ -633,7 +651,7 @@ const Leaf = ({
     .map((a) => a._type)
     .map((t) => ANNOTATION_TYPES.find((t2) => t2._type === t));
 
-  let altView = getAltView(activeAnnotations, annotations);
+  let altView = getAltView(activeAnnotations, extensionsByType, annotations);
 
   const isAltViewText = isString(altView)
 

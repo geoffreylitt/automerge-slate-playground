@@ -7,6 +7,11 @@ import {MarkdownDoc} from "./slate-automerge";
 import Automerge from "automerge";
 import PotluckEditor from "./PotluckEditor";
 import {DURATION_TYPE, INGREDIENT_TYPE, SCALE_FACTOR_TYPE} from "./annotations";
+import ingredientsPlugin from "./plugins/ingredients";
+import scalerPlugin from "./plugins/scaler";
+import timerPlugin from "./plugins/timer";
+import {useState} from "react"
+import {getMergedExtensions} from "./plugins";
 
 // const DEFAULT_TEXT = `
 // # Thai Peanut Noodle Bowls with Spicy Lime Tofu
@@ -110,6 +115,10 @@ const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
 const SHOW_DATA_DUMP = false;
 
 export default function PotluckDemo() {
+  // can't use automerge currently because plugins contain fuction values
+  const [plugins, setPlugins] = useState([ingredientsPlugin, scalerPlugin, timerPlugin]);
+  const extensionsByType = getMergedExtensions(plugins)
+
   const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>({
     content: new Automerge.Text(DEFAULT_TEXT),
     annotations: [],
@@ -164,6 +173,9 @@ export default function PotluckDemo() {
       <PotluckEditor
         doc={doc}
         changeDoc={changeDoc}
+        plugins={plugins}
+        changePlugins={setPlugins}
+        extensionsByType={extensionsByType}
         defaultAnnotations={DEFAULT_ANNOTATIONS}
       />
 

@@ -1,14 +1,15 @@
 import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
-import { getTextOfAnnotation, Plugin } from "./index";
-import { Annotation, MarkdownDoc } from "../slate-automerge";
+import { Plugin, getTextOfAnnotation } from "./index";
+import { Annotation } from "../slate-automerge";
 import { INGREDIENT_TYPE } from "../annotations";
+import Automerge from 'automerge'
 
 const ingredientsPlugin: Plugin = {
-  transform(annotations: Annotation[], doc: MarkdownDoc) {
+  transform(annotations: Annotation[], text: Automerge.Text) {
     for (const annotation of annotations) {
       if (annotation._type === INGREDIENT_TYPE) {
-        const text = getTextOfAnnotation(doc, annotation);
-        annotation.data = parseIngredient(text, "eng");
+        const annotationText = getTextOfAnnotation(text, annotation);
+        annotation.data = parseIngredient(annotationText, "eng");
       }
     }
   },

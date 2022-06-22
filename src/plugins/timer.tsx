@@ -3,14 +3,15 @@ import { DURATION_TYPE } from "../annotations";
 import { getTextOfAnnotation, Plugin } from "./index";
 import parseDuration from "parse-duration";
 import { Annotation, MarkdownDoc } from "../slate-automerge";
+import Automerge from "automerge";
 
 const timerPlugin: Plugin = {
-  transform(annotations: Annotation[], doc: MarkdownDoc) {
+  transform(annotations: Annotation[], text: Automerge.Text) {
     for (const annotation of annotations) {
-      const text = getTextOfAnnotation(doc, annotation);
+      const annotationText = getTextOfAnnotation(text, annotation);
 
       if (annotation._type === DURATION_TYPE) {
-        annotation.data.totalSeconds = parseDuration(text) / 1000;
+        annotation.data.totalSeconds = parseDuration(annotationText) / 1000;
       }
     }
   },

@@ -4,6 +4,7 @@ import {
   MarkdownDoc,
 } from "../slate-automerge";
 import { cloneDeep } from "lodash";
+import * as Automerge from "automerge";
 
 export type AnnotationView = (
   data: any,
@@ -21,29 +22,29 @@ export type AnnotationExtension = {
 };
 
 export type Plugin = {
-  transform?: (annotations: Annotation[], doc: MarkdownDoc) => void;
+  transform?: (annotations: Annotation[], text: Automerge.Text) => void;
   annotations?: {
     [annotationType: string]: AnnotationExtension;
   };
 };
 
 export function getTextOfAnnotation(
-  doc: MarkdownDoc,
+  text: Automerge.Text,
   annotation: Annotation
 ): string {
-  return getTextAtAutomergeSpan(doc.content, annotation.range);
+  return getTextAtAutomergeSpan(text, annotation.range);
 }
 
 export function applyPluginTransforms(
   plugins: Plugin[],
-  doc: MarkdownDoc,
+  text: Automerge.Text,
   annotations: Annotation[]
 ): Annotation[] {
   annotations = cloneDeep(annotations);
 
   for (const plugin of plugins) {
     if (plugin.transform) {
-      plugin.transform(annotations, doc);
+      plugin.transform(annotations, text);
     }
   }
 
