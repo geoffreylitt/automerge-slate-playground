@@ -1,14 +1,26 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
-import React, {useCallback, useContext, useEffect, useMemo, useState} from "react";
-import {jsx, css} from "@emotion/react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { jsx, css } from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
-import {formatQuantity} from "format-quantity";
+import { formatQuantity } from "format-quantity";
 import scalerPlugin from "./plugins/scaler";
 import ingredientsPlugin from "./plugins/ingredients";
-import timerPlugin from './plugins/timer';
-import {AnnotationView, ComputedProperties, getMergedExtensions, Plugin, annotationWithComputedProps} from './plugins';
-import { isString } from 'lodash'
+import timerPlugin from "./plugins/timer";
+import {
+  AnnotationView,
+  ComputedProperties,
+  getMergedExtensions,
+  Plugin,
+  annotationWithComputedProps,
+} from "./plugins";
+import { isString } from "lodash";
 
 import {
   createEditor,
@@ -20,11 +32,11 @@ import {
   Editor,
   Transforms,
 } from "slate";
-import {withHistory} from "slate-history";
-import {Editable, RenderLeafProps, Slate, withReact} from "slate-react";
-import Prism, {Token} from "prismjs";
-import {loremIpsum} from "lorem-ipsum";
-import {v4 as uuidv4} from "uuid";
+import { withHistory } from "slate-history";
+import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
+import Prism, { Token } from "prismjs";
+import { loremIpsum } from "lorem-ipsum";
+import { v4 as uuidv4 } from "uuid";
 import {
   MarkdownDoc,
   Annotation,
@@ -32,18 +44,18 @@ import {
   automergeSpanFromSlateRange,
   getTextAtAutomergeSpan,
 } from "./slate-automerge";
-import {normal} from "color-blend";
+import { normal } from "color-blend";
 import isHotkey from "is-hotkey";
-import {pick, pickBy, sortBy, uniq} from "lodash";
-import {HotTable} from "@handsontable/react";
-import {registerAllModules} from "handsontable/registry";
-import {ANNOTATION_TYPES} from "./annotations";
-import {applyPluginTransforms} from './plugins';
+import { pick, pickBy, sortBy, uniq } from "lodash";
+import { HotTable } from "@handsontable/react";
+import { registerAllModules } from "handsontable/registry";
+import { ANNOTATION_TYPES } from "./annotations";
+import { applyPluginTransforms } from "./plugins";
 
 registerAllModules();
 
 const withOpHandler = (editor: Editor, callback: (op: Operation) => void) => {
-  const {apply} = editor;
+  const { apply } = editor;
   editor.apply = (op) => {
     apply(op);
     callback(op);
@@ -93,13 +105,9 @@ type MarkdownEditorProps = {
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
 };
 
-const PLUGINS: Plugin[] = [
-  ingredientsPlugin,
-  scalerPlugin,
-  timerPlugin
-]
+const PLUGINS: Plugin[] = [ingredientsPlugin, scalerPlugin, timerPlugin];
 
-const EXTENSIONS_BY_ANNOTATION = getMergedExtensions(PLUGINS)
+const EXTENSIONS_BY_ANNOTATION = getMergedExtensions(PLUGINS);
 
 const HOTKEYS = {
   "mod+1": ANNOTATION_TYPES[0]._type,
@@ -119,10 +127,10 @@ const HOTKEYS = {
 };
 
 const AnnotateButton = ({
-                          annotationType,
-                          addAnnotation,
-                          modifierDown,
-                        }: {
+  annotationType,
+  addAnnotation,
+  modifierDown,
+}: {
   annotationType: AnnotationType;
   addAnnotation: (annotationType: string) => void;
   modifierDown: boolean;
@@ -141,13 +149,17 @@ const AnnotateButton = ({
         }
 
         &:enabled {
-          background-color: rgb(${annotationType.color.r} ${annotationType.color.g}
-            ${annotationType.color.b} / 20%);
+          background-color: rgb(
+            ${annotationType.color.r} ${annotationType.color.g}
+              ${annotationType.color.b} / 20%
+          );
         }
 
         &:active {
-          background-color: rgb(${annotationType.color.r} ${annotationType.color.g}
-            ${annotationType.color.b} / 50%);
+          background-color: rgb(
+            ${annotationType.color.r} ${annotationType.color.g}
+              ${annotationType.color.b} / 50%
+          );
         }
       `}
     >
@@ -163,7 +175,7 @@ const AnnotateButton = ({
   );
 };
 
-export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
+export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
     null
@@ -176,12 +188,12 @@ export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
   // It should stay a single node throughout all edits.
   const content: Node[] = [
     {
-      children: [{text: doc.content.toString()}],
+      children: [{ text: doc.content.toString() }],
     },
   ];
 
   const renderLeaf = useCallback(
-    (props) => <Leaf {...props} annotations={docSpans}/>,
+    (props) => <Leaf {...props} annotations={docSpans} />,
     [docSpans, activeAnnotationId]
   );
 
@@ -221,16 +233,21 @@ export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
         currentSelection
       );
 
-
       // todo: reapply transformation whenever annotations change instead of calling transform at creation
-      const annotations: Annotation[] = [{
-        id: uuidv4(),
-        range: automergeSpan,
-        _type: annotationType,
-        data: {},
-      }];
+      const annotations: Annotation[] = [
+        {
+          id: uuidv4(),
+          range: automergeSpan,
+          _type: annotationType,
+          data: {},
+        },
+      ];
 
-      const transformedAnnotations = applyPluginTransforms(PLUGINS, doc, annotations)
+      const transformedAnnotations = applyPluginTransforms(
+        PLUGINS,
+        doc,
+        annotations
+      );
 
       for (const annotation of transformedAnnotations) {
         doc.annotations.push(annotation);
@@ -307,8 +324,8 @@ export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
         if (typeof token !== "string") {
           ranges.push({
             [token.type]: true,
-            anchor: {path, offset: start},
-            focus: {path, offset: end},
+            anchor: { path, offset: start },
+            focus: { path, offset: end },
           });
         }
 
@@ -356,8 +373,7 @@ export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
           grid-area: editor;
         `}
       >
-        <Slate editor={editor} value={content} onChange={() => {
-        }}>
+        <Slate editor={editor} value={content} onChange={() => {}}>
           <Editable
             decorate={decorate}
             renderLeaf={renderLeaf}
@@ -390,7 +406,7 @@ export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
                 setModifierDown(false);
               }
             }}
-            style={{maxHeight: "700px", overflow: "auto"}}
+            style={{ maxHeight: "700px", overflow: "auto" }}
           />
         </Slate>
       </div>
@@ -411,11 +427,11 @@ export default function PotluckEditor({doc, changeDoc}: MarkdownEditorProps) {
 }
 
 const Annotations = ({
-                       text,
-                       annotations,
-                       activeAnnotationId,
-                       setActiveAnnotationId,
-                     }: {
+  text,
+  annotations,
+  activeAnnotationId,
+  setActiveAnnotationId,
+}: {
   text: Automerge.Text;
   annotations: Annotation[];
   activeAnnotationId: string;
@@ -440,16 +456,18 @@ const Annotations = ({
         ];
         const annotationsForTable = annotationsOfType.map((a) => {
           const extension = EXTENSIONS_BY_ANNOTATION[a._type];
-          const annotation = annotationWithComputedProps({
-            ...a.data,
-            text: getTextAtAutomergeSpan(text, a.range)
-          }, extension)
+          const annotation = annotationWithComputedProps(
+            {
+              ...a.data,
+              text: getTextAtAutomergeSpan(text, a.range),
+            },
+            extension
+          );
 
-
-          const data: any = {}
+          const data: any = {};
 
           for (const field of visibleFields) {
-            data[field] = annotation[field]
+            data[field] = annotation[field];
           }
 
           return data;
@@ -476,7 +494,7 @@ const Annotations = ({
               manualColumnResize={true}
               wordWrap={false}
               afterSelection={(row, col, row2, col2) => {
-                console.log({row, col});
+                console.log({ row, col });
                 const annotation = annotationsOfType[row];
                 if (annotation) {
                   setActiveAnnotationId(annotation.id);
@@ -490,35 +508,36 @@ const Annotations = ({
   );
 };
 
-function getAltView (activeAnnotations: Annotation[], annotations: Annotation[]) : JSX.Element | string {
-  if (activeAnnotations.length  === 0) {
-    return
-
+function getAltView(
+  activeAnnotations: Annotation[],
+  annotations: Annotation[]
+): JSX.Element | string {
+  if (activeAnnotations.length === 0) {
+    return;
   }
 
-  const type = activeAnnotations[0]._type
-  const extension = EXTENSIONS_BY_ANNOTATION[type]
+  const type = activeAnnotations[0]._type;
+  const extension = EXTENSIONS_BY_ANNOTATION[type];
 
   if (!extension || !extension.view) {
-    return
+    return;
   }
 
-  const annotation = activeAnnotations[0]
-  const data = annotationWithComputedProps(annotation.data, extension)
+  const annotation = activeAnnotations[0];
+  const data = annotationWithComputedProps(annotation.data, extension);
 
-  return extension.view(data, annotations)
+  return extension.view(data, annotations);
 }
-
 
 // This is where we define how an annotation is rendered.
 // We style the "leaf" element in Slate, which is basically a container element
 // wrapping some content-editable text.
 const Leaf = ({
-                attributes,
-                children,
-                leaf,
-                annotations,
-              }: RenderLeafProps & { annotations: Annotation[] }) => {
+  attributes,
+  children,
+  leaf,
+  annotations,
+}: RenderLeafProps & { annotations: Annotation[] }) => {
   const highlightOpacity = leaf.active ? 0.6 : 0.2;
   // Get all the active annotation types at this leaf
   const activeAnnotations = Object.keys(leaf)
@@ -532,16 +551,16 @@ const Leaf = ({
 
   let altView = getAltView(activeAnnotations, annotations);
 
-  const isAltViewText = isString(altView)
+  const isAltViewText = isString(altView);
 
   const highlightColors = activeAnnotationTypes.map((a) => a.color);
   const blendedColor = highlightColors.reduce(
     (blended, color) =>
       normal(
-        {...blended, a: highlightOpacity},
-        {...color, a: highlightOpacity}
+        { ...blended, a: highlightOpacity },
+        { ...color, a: highlightOpacity }
       ),
-    {r: 255, g: 255, b: 255, a: 0}
+    { r: 255, g: 255, b: 255, a: 0 }
   );
 
   return (
@@ -584,10 +603,12 @@ const Leaf = ({
         `}
         ${activeAnnotationTypes.length > 0 &&
         css`
-          background-color: rgba(${blendedColor.r},
-          ${blendedColor.g},
-          ${blendedColor.b},
-          ${blendedColor.a});
+          background-color: rgba(
+            ${blendedColor.r},
+            ${blendedColor.g},
+            ${blendedColor.b},
+            ${blendedColor.a}
+          );
           padding: 0 0.2rem;
           color: black;
           text-decoration: underline;
@@ -595,11 +616,12 @@ const Leaf = ({
 
           &::before {
             content: ${activeAnnotationTypes
-                    .map((at) => `"${at.icon} "`)
-                    .join(" ")};
+              .map((at) => `"${at.icon} "`)
+              .join(" ")};
           }
 
-          ${altView && isAltViewText &&
+          ${altView &&
+          isAltViewText &&
           css`
             &::after {
               content: "${altView}";
@@ -620,15 +642,15 @@ const Leaf = ({
           <div
             contentEditable="false"
             style={{
-              cursor: 'default',
-              color: 'gray',
-              display: 'inline-block'
-            }}>
+              cursor: "default",
+              color: "gray",
+              display: "inline-block",
+            }}
+          >
             {altView}
           </div>
         </>
       )}
-
     </span>
   );
 };

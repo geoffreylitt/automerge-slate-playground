@@ -1,4 +1,3 @@
-
 - Question: technically, how do we render alternative views over the doc?
   - maybe easy to do with slate on hover?
   - maybe avoid alternative views for now?
@@ -14,6 +13,7 @@
     - maybe hierarchy is default but you can also break out?
 
 first steps on coding:
+
 - start a codebase
 - add a transform mechanism to update the displayed annotation
 - add sub-ranges for quantities
@@ -22,38 +22,36 @@ ingredient.quantity // => look in the "quantity" sub-annotation and get the data
 
 // arbitrary nested annotations
 {
-  id: "123",
-  type: "ingredient",
-  range: { start: 1, end: 10 },
-  text: "3 eggs",
-  data: { ... }
-  subAnnotations: [
-    {
-      id: "456,
-      type: "ingredient",
-      propertyName: "quantity",
-      range: { start: 1, end: 2 },
-      text: "3",
-      data: { quantity: 3 }
-    },
-    {
-      ...
-    }
-  ]
+id: "123",
+type: "ingredient",
+range: { start: 1, end: 10 },
+text: "3 eggs",
+data: { ... }
+subAnnotations: [
+{
+id: "456,
+type: "ingredient",
+propertyName: "quantity",
+range: { start: 1, end: 2 },
+text: "3",
+data: { quantity: 3 }
+},
+{
+...
 }
-
+]
+}
 
 // marked ranges
 {
-  id: "123",
-  type: "ingredient",
-  range: { start: 1, end: 10 },
-  text: "3 eggs",
-  data: {
-    quantity: {
-      value: 3,
-      range: { start: 1, end: 2 }
-    }
-  }
+id: "123",
+type: "ingredient",
+range: { start: 1, end: 10 },
+text: "3 eggs",
+data: {
+quantity: {
+value: 3,
+range: { start: 1, end: 2 }
 }
-
+}
+}
