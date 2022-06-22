@@ -113,6 +113,50 @@ export default function PotluckDemo() {
   const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>({
     content: new Automerge.Text(DEFAULT_TEXT),
     annotations: [],
+  }, (diff) => {
+    if (diff.objectId !== '_root') {
+      return
+    }
+
+    const annotations: any = Object.values(diff.props.annotations)[0]
+
+    const changedIndex: { [index: string]: boolean } = {}
+    const insertedIndex: { [index: string]: boolean } = {}
+    const deletedIndex: { [index: string]: boolean } = {}
+
+    const edits = annotations.edits;
+
+    if (edits) {
+      for (const edit of edits) {
+        switch (edit.action) {
+          case 'insert':
+            insertedIndex[edit.index] = true
+            break;
+          case 'remove':
+            deletedIndex[edit.index] = true
+            break;
+        }
+      }
+    }
+
+    for (const prop of Object.keys(annotations.props)) {
+      if (!insertedIndex[prop]) {
+        changedIndex[prop] = true
+      }
+    }
+
+    const changes = Object.entries(changedIndex)
+      .map(([index]) => ({ type: 'change', index }))
+      .concat(
+        Object.entries(insertedIndex)
+          .map(([index]) => ({ type: 'insert', index }))
+      )
+      .concat(
+        Object.entries(deletedIndex)
+          .map(([index]) => ({ type: 'remove', index }))
+      )
+
+    console.log('changes', changes)
   });
 
   return (
