@@ -340,16 +340,14 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   return (
     <div
       css={css`
-        padding: 30px;
-        box-sizing: border-box;
-        max-height: 100vh;
+        column-gap: 10px;
         display: grid;
+        max-height: 100vh;
         grid-template-columns: 60% 40%;
         grid-template-rows: 30px auto;
         grid-template-areas:
           "toolbar toolbar"
           "editor annotations";
-        column-gap: 10px;
         row-gap: 10px;
       `}
     >
@@ -366,10 +364,10 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
           />
         ))}
       </div>
+
       <div
+        className="shadow-lg bg-white rounded-lg p-4"
         css={css`
-          border: solid thin #ddd;
-          padding: 5px;
           grid-area: editor;
         `}
       >
@@ -410,6 +408,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
           />
         </Slate>
       </div>
+
       <div
         css={css`
           grid-area: annotations;

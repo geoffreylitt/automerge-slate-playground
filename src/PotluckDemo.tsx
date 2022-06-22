@@ -89,5 +89,9 @@ export default function PotluckDemo() {
     annotations: [],
   });
 
-  return <PotluckEditor doc={doc} changeDoc={changeDoc} />;
+  return (
+    <div className="p-4">
+      <PotluckEditor doc={doc} changeDoc={changeDoc} />
+    </div>
+  );
 }
