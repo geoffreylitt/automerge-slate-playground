@@ -19,7 +19,7 @@ const timerPlugin: Plugin = {
   annotations: {
     [DURATION_TYPE]: {
       computed: {
-        isInProgress: ({ remainingSeconds }) => remainingSeconds !== undefined,
+        isInProgress: ({ remainingSeconds, totalSeconds, isRunning }) => remainingSeconds !== totalSeconds || isRunning,
         isFinished: ({ remainingSeconds }) => remainingSeconds === 0,
         isPaused: ({ remainingSeconds, isRunning }) =>
           remainingSeconds > 0 && isRunning === false,
@@ -34,26 +34,51 @@ const timerPlugin: Plugin = {
         remainingSeconds: ({ totalSeconds }) => totalSeconds,
       },
 
-      view: ({ minutesDigits, secondsDigits }) => {
+      view: ({ minutesDigits, secondsDigits, isFinished }) => {
         return (
-          <div style={{padding: '8px'}}>
+          <div style={{
+            padding: '8px',
+            whiteSpace: 'nowrap',
+            color: isFinished ? 'red' : 'black'
+          }}>
             {minutesDigits.toString().padStart(2, "0")} : {secondsDigits.toString().padStart(2, "0")}
           </div>
         )
       },
 
-      effect: () => {
+      effect: (duration) => {
+        let interval : any;
+
+        const tick = () => {
+          if (duration.remainingSeconds > 0) {
+            duration.remainingSeconds = duration.remainingSeconds - 1
+          } else {
+            duration.isRunning = false
+          }
+        }
+
         return {
           onMount () {
-            console.log('init duration')
+            if (duration.isRunning) {
+              interval = setInterval(tick, 1000)
+            }
           },
 
           onUnmount () {
-            console.log('remove duration')
+            clearInterval(interval);
           },
 
-          onChange () {
-            console.log('update duration')
+          onChange (prev) {
+            if (prev.isRunning === duration.isRunning) {
+              return
+            }
+
+            if (duration.isRunning) {
+              interval = setInterval(tick, 1000)
+              return
+            }
+
+            clearInterval(interval)
           }
         }
       }

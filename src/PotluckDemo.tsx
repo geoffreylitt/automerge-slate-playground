@@ -114,7 +114,6 @@ const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
 
 const SHOW_DATA_DUMP = false;
 
-
 export default function PotluckDemo() {
   // can't use automerge currently because plugins contain function values
   const [plugins, setPlugins] = useState([ingredientsPlugin, scalerPlugin, timerPlugin]);
@@ -130,7 +129,7 @@ export default function PotluckDemo() {
     observable
   });
 
-  useEffectHandlers(observable, doc, extensionsByType)
+  useEffectHandlers({ doc, changeDoc, observable, extensionsByType })
 
   return (
     <div className="max-w-6xl p-4">
@@ -145,7 +144,7 @@ export default function PotluckDemo() {
 
       {SHOW_DATA_DUMP && <pre>
         {JSON.stringify(
-          doc.annotations.filter(({_type}) => _type === SCALE_FACTOR_TYPE),
+          doc.annotations.filter(({_type}) => _type === DURATION_TYPE),
           null,
           2
         )}

@@ -6,7 +6,7 @@ import {
 import {cloneDeep} from "lodash";
 import * as Automerge from "automerge";
 import {useObservableListener} from "../hooks";
-import {useRef} from "react";
+import React, {useRef} from "react";
 
 export type AnnotationView = (
   data: any,
@@ -18,7 +18,7 @@ export type ComputedProperty = (data: any) => any;
 export type ComputedProperties = { [name: string]: ComputedProperty };
 
 export type EffectHooks = {
-  onChange?: () => void;
+  onChange?: (prev: any) => void;
   onMount?: () => void;
   onUnmount?: () => void;
 }
@@ -27,7 +27,7 @@ export type AnnotationExtension = {
   view?: AnnotationView;
   computed?: ComputedProperties;
   defaults?: ComputedProperties;
-  effect?: () => EffectHooks
+  effect?: (mutableAnnotation: any) => EffectHooks
 };
 
 export type Plugin = {
@@ -162,19 +162,91 @@ export function annotationWithComputedProps(
 
       return target[prop];
     },
-
-    set() {
-      throw new Error("invalid mutation");
-    },
   };
 
   return new Proxy(data, handler);
+}
+
+const ENABLE_MUTABLE_PROXY_LOG = false
+
+export function mutableAnnotationWithComputedProps({
+  docRef, id, changeDoc, extension
+}: {
+  docRef: any,
+  id: string,
+  changeDoc: (mutation: (doc: MarkdownDoc) => void) => void
+  extension: AnnotationExtension
+}) {
+  const { computed = {}, defaults = {} } = extension;
+
+  const handler = {
+    get(target: any, prop: string) {
+      const annotation = docRef.current.annotations.find((annotation: Annotation) => annotation.id === id)
+
+      if (!annotation) {
+        return undefined
+      }
+
+      ENABLE_MUTABLE_PROXY_LOG && console.log("get", prop, annotation.data);
+
+      if (annotation.data.hasOwnProperty(prop)) {
+        return annotation.data[prop];
+      }
+
+      const computation = computed[prop];
+
+      ENABLE_MUTABLE_PROXY_LOG && console.log("computation", computation);
+
+      if (computation) {
+        const result = computation(
+          annotationWithComputedProps(annotation.data, extension)
+        );
+
+        ENABLE_MUTABLE_PROXY_LOG && console.log("=", result);
+
+        return result;
+      }
+
+      const defaultComputation = defaults[prop];
+
+      ENABLE_MUTABLE_PROXY_LOG && console.log("default", defaultComputation);
+
+      if (defaultComputation) {
+        const result = defaultComputation(
+          annotationWithComputedProps(annotation.data, extension)
+        );
+
+        ENABLE_MUTABLE_PROXY_LOG && console.log("=", result);
+
+        return result;
+      }
+
+      return target[prop];
+    },
+
+    set(target: any, prop: string, value: any) {
+
+      changeDoc((doc: MarkdownDoc) => {
+        const index = doc.annotations.findIndex((annotation) => annotation.id === id)
+        const annotation = doc.annotations[index]
+
+        if (annotation) {
+          annotation.data[prop] = value
+        }
+      })
+
+      return true
+    }
+  };
+
+  return new Proxy({}, handler);
 }
 
 
 type AnnotationChange = {
   action: 'change' | 'insert' | 'remove',
   annotation: Annotation
+  prevAnnotation?: Annotation
   index: string
 }
 
@@ -207,59 +279,90 @@ function getAnnotationChangesFromDiff(diff: Automerge.ObjectDiff, before: Markdo
   }
 
   return Object.entries(changedIndex)
-    .map(([index]) => ({ action: 'change', index, annotation: after.annotations[parseInt(index)] }) as AnnotationChange)
+    .map(([index]) => ({
+      index,
+      action: 'change',
+      annotation: after.annotations[parseInt(index)],
+      prevAnnotation: before.annotations[parseInt(index)]
+    }) as AnnotationChange)
     .concat(
       Object.entries(insertedIndex)
-        .map(([index]) => ({ action: 'insert', index, annotation: after.annotations[parseInt(index)] }))
+        .map(([index]) => ({
+          index,
+          action: 'insert',
+          annotation: after.annotations[parseInt(index)]
+        }))
     )
     .concat(
       Object.entries(deletedIndex)
-        .map(([index]) => ({ action: 'remove', index, annotation: before.annotations[parseInt(index)] }))
+        .map(([index]) => ({
+          index,
+          action: 'remove',
+          annotation: before.annotations[parseInt(index)]
+        }))
     )
 }
 
 
-export function useEffectHandlers(observable: Automerge.Observable, doc: MarkdownDoc, extensionsByType: { [type: string]: AnnotationExtension }) {
+export function useEffectHandlers({
+  observable,
+  doc,
+  extensionsByType,
+  changeDoc,
+}: {
+  observable: Automerge.Observable,
+  doc: MarkdownDoc,
+  extensionsByType: { [type: string]: AnnotationExtension },
+  changeDoc: (mutation: (doc: MarkdownDoc) => void) => void
+}) {
   const effectHandlersRef = useRef({})
+  const docRef: any = useRef()
+
+  docRef.current = doc
 
   useObservableListener(observable, doc, (diff, before, after) => {
-    try {
+    const changes = getAnnotationChangesFromDiff(diff, before, after)
 
-      const changes = getAnnotationChangesFromDiff(diff, before, after)
+    docRef.current = after
 
-      const effectHandlers: { [id: string]: EffectHooks } = effectHandlersRef.current
+    const effectHandlers: { [id: string]: EffectHooks } = effectHandlersRef.current
 
-      for (const { action, annotation, index } of changes) {
-        const extension = extensionsByType[annotation._type]
+    for (const { action, annotation, prevAnnotation } of changes) {
+      const extension = extensionsByType[annotation._type]
 
-        if (!extension) {
-          continue
-        }
-
-        const effect = extensionsByType[annotation._type].effect
-
-        if (!effect) {
-          continue
-        }
-
-        switch (action) {
-          case "change":
-            effectHandlers[annotation.id].onChange()
-            break;
-
-          case "insert":
-            const handler = effectHandlers[annotation.id] = effect()
-            handler.onMount()
-            break;
-
-          case "remove":
-            effectHandlers[annotation.id].onUnmount()
-            delete effectHandlers[annotation.id]
-            break;
-        }
+      if (!extension) {
+        continue
       }
-    } catch (err) {
-      console.log('err', err)
+
+      const effect = extensionsByType[annotation._type].effect
+
+      if (!effect) {
+        continue
+      }
+
+      switch (action) {
+        case "change": {
+          const prev = annotationWithComputedProps(prevAnnotation.data, extension)
+          effectHandlers[annotation.id].onChange(prev)
+          break;
+        }
+        case "insert":
+          const mutableAnnotation = mutableAnnotationWithComputedProps({
+            docRef,
+            id: annotation.id,
+            changeDoc,
+            extension
+          })
+
+          const handler = effectHandlers[annotation.id] = effect(mutableAnnotation)
+          handler.onMount()
+          break;
+
+        case "remove":
+          effectHandlers[annotation.id].onUnmount()
+          delete effectHandlers[annotation.id]
+          break;
+      }
     }
   })
 }
