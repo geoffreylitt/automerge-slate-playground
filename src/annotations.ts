@@ -1,6 +1,6 @@
-import {parse as parseIngredient} from 'recipe-ingredient-parser-v3';
-import {formatQuantity} from 'format-quantity';
-import {Annotation} from './slate-automerge';
+import { parse as parseIngredient } from "recipe-ingredient-parser-v3";
+import { formatQuantity } from "format-quantity";
+import { Annotation } from "./slate-automerge";
 
 export type AnnotationType = {
   _type: string;
@@ -9,9 +9,9 @@ export type AnnotationType = {
   visibleFields?: string[];
 };
 
-export const INGREDIENT_TYPE = "Ingredient"
-export const SCALE_FACTOR_TYPE = "Scale Factor"
-export const DURATION_TYPE = "Duration"
+export const INGREDIENT_TYPE = "Ingredient";
+export const SCALE_FACTOR_TYPE = "Scale Factor";
+export const DURATION_TYPE = "Duration";
 
 export const ANNOTATION_TYPES: AnnotationType[] = [
   {
@@ -54,7 +54,7 @@ export const ANNOTATION_TYPES: AnnotationType[] = [
   {
     _type: SCALE_FACTOR_TYPE,
     icon: "🍴",
-    color: { r: 65, g: 155, b: 204 }
+    color: { r: 65, g: 155, b: 204 },
   },
   {
     _type: "Tag",

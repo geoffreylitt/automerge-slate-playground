@@ -1,8 +1,8 @@
-import React from 'react';
-import {formatQuantity} from 'format-quantity';
-import {getTextOfAnnotation, Plugin} from './index';
-import {Annotation, MarkdownDoc} from '../slate-automerge';
-import {INGREDIENT_TYPE, SCALE_FACTOR_TYPE} from '../annotations';
+import React from "react";
+import { formatQuantity } from "format-quantity";
+import { getTextOfAnnotation, Plugin } from "./index";
+import { Annotation, MarkdownDoc } from "../slate-automerge";
+import { INGREDIENT_TYPE, SCALE_FACTOR_TYPE } from "../annotations";
 
 const getScaleFactor = (annotations: Annotation[]): number | undefined => {
   const scaleAnnotations = annotations.filter(
@@ -15,32 +15,31 @@ const getScaleFactor = (annotations: Annotation[]): number | undefined => {
   return scaleAnnotations[0]!.data.scaleFactor;
 };
 
-
 const scalerPlugin: Plugin = {
-
   transform(annotations: Annotation[], doc: MarkdownDoc) {
     for (const annotation of annotations) {
       if (annotation._type === SCALE_FACTOR_TYPE) {
-        const text = getTextOfAnnotation(doc, annotation)
-        annotation.data.scaleFactor = parseFloat(text)
+        const text = getTextOfAnnotation(doc, annotation);
+        annotation.data.scaleFactor = parseFloat(text);
       }
     }
   },
 
   annotations: {
     [INGREDIENT_TYPE]: {
-      view: ({quantity, unitPlural}, allAnnotations: Annotation[]) => {
+      view: ({ quantity, unitPlural }, allAnnotations: Annotation[]) => {
         const scaleFactor = getScaleFactor(allAnnotations);
         if (scaleFactor === undefined) {
           return undefined;
         }
         // A hardcoded transformation function that scales by 2x
-        return (
-          `→ ${formatQuantity(quantity * scaleFactor, true)} ${unitPlural}`
-        );
-      }
-    }
-  }
-}
+        return `→ ${formatQuantity(
+          quantity * scaleFactor,
+          true
+        )} ${unitPlural}`;
+      },
+    },
+  },
+};
 
 export default scalerPlugin;
