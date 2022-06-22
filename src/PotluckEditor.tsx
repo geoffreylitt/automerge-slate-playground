@@ -513,11 +513,11 @@ const Annotations = ({
           annotations,
           (a) => a.range.start.index
         ).filter((a) => a._type === annotationType);
+        const extension = EXTENSIONS_BY_ANNOTATION[annotationType];
         const visibleFields = annotationTypeDefinition.visibleFields ?? [
           "text",
         ];
         const annotationsForTable = annotationsOfType.map((a) => {
-          const extension = EXTENSIONS_BY_ANNOTATION[a._type];
           const annotation = annotationWithComputedProps(
             {
               ...a.data,
@@ -535,6 +535,11 @@ const Annotations = ({
           return data;
         });
 
+        const columns = visibleFields.map((name) => ({
+          data: name,
+          readOnly: extension?.computed[name] !== undefined
+        }))
+
         return (
           <div
             key={annotationType}
@@ -548,6 +553,7 @@ const Annotations = ({
             <HotTable
               data={annotationsForTable}
               colHeaders={visibleFields}
+              columns={columns}
               rowHeaders={false}
               width="400"
               height="200"
@@ -569,7 +575,6 @@ const Annotations = ({
                 onChangeAnnotations((annotations : Annotation[]) => {
                   for (const [row, prop, oldValue, newValue] of changes) {
                     const id = annotationsOfType[row].id
-                    console.log('id', id, {annotationsForTable})
 
                     const index = annotations.findIndex((annotation) => {
                       return annotation.id === id
