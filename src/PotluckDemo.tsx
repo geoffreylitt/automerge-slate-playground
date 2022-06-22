@@ -67,8 +67,7 @@ import { v4 as uuidv4 } from "uuid";
 // *HOW TO PRESS TOFU:
 // You don't have to press tofu before cooking it, but it gives the tofu a firmer, denser texture. It also removes excess water, allowing the pressed tofu to crisp and brown more easily when cooked. Once pressed, tofu will soak up of any marinade you use, creating a more flavorful final product. Even as little as 20 minutes of pressing is usually worthwhile. To press tofu, simply put a block of tofu on a large rimmed plate. Set another plate on top of the tofu and weight it with a couple of heavy books or large cans of tomatoes. Let sit for at least 20 minutes, or press it for up to 8 hours at room temperature. Drain away the excess water and store the tofu in an airtight container in the fridge until you're ready to use it. It will keep for 3 days. `;
 
-const DEFAULT_TEXT = `
-# Chili
+const DEFAULT_TEXT = `# Chili
 
 Bring 2 pounds low fat (~90/10) ground chuck beef to room temperature, and season with 1 Tbsp onion powder, 2 tsp salt, and 3/8 tsp garlic powder.
 
