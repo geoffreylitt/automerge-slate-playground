@@ -90,22 +90,5 @@ export default function PotluckDemo() {
     annotations: [],
   });
 
-  return (
-    <div
-      css={css`
-        max-width: 100vw;
-        height: 100%;
-        box-sizing: border-box;
-      `}
-    >
-      <div
-        css={css`
-          grid-area: app-left;
-          overflow: hidden;
-        `}
-      >
-        <PotluckEditor doc={doc} changeDoc={changeDoc} />
-      </div>
-    </div>
-  );
+  return <PotluckEditor doc={doc} changeDoc={changeDoc} />;
 }
