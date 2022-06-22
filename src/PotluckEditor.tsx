@@ -191,13 +191,6 @@ export default function PotluckEditor({
 
   const annotations = doc.annotations;
 
-  console.log({
-    annotations: annotations.map((a) => [
-      a.range.start.index,
-      a.range.end.index,
-    ]),
-  });
-
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
   const content: Node[] = [
@@ -216,6 +209,7 @@ export default function PotluckEditor({
     return withOpHandler(
       withHistory(withReact(createEditor())),
       (op: Operation) => {
+        console.log("OP!", op.type);
         if (op.type === "insert_text") {
           changeDoc((doc: MarkdownDoc) => {
             doc.content.insertAt(op.offset, op.text);
@@ -243,7 +237,11 @@ export default function PotluckEditor({
     annotationType: string,
     currentSelection: Range | null
   ) => {
-    if (currentSelection === null) {
+    // Avoid adding empty annotations
+    if (
+      currentSelection === null ||
+      currentSelection.anchor.offset === currentSelection.focus.offset
+    ) {
       return;
     }
 
@@ -506,7 +504,6 @@ const Annotations = ({
           annotations,
           (a) => a.range.start.index
         ).filter((a) => a._type === annotationType);
-        console.log(annotationType, annotationsOfType);
         const visibleFields = annotationTypeDefinition.visibleFields ?? [
           "text",
         ];
@@ -550,7 +547,6 @@ const Annotations = ({
               manualColumnResize={true}
               wordWrap={false}
               afterSelection={(row, col, row2, col2) => {
-                console.log({ row, col });
                 const annotation = annotationsOfType[row];
                 if (annotation) {
                   setActiveAnnotationId(annotation.id);
