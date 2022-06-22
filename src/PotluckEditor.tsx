@@ -281,6 +281,16 @@ export default function PotluckEditor({
     });
   };
 
+  const deleteAnnotation = (annotationId: string): void => {
+    changeDoc((doc) => {
+      const index = doc.annotations.findIndex((a) => a.id === annotationId);
+      if (index < 0) {
+        return;
+      }
+      doc.annotations.splice(index, 1);
+    });
+  };
+
   // Add some default annotations to the doc
   useEffect(() => {
     for (const annotationSpec of defaultAnnotations) {
@@ -404,6 +414,12 @@ export default function PotluckEditor({
             currentSelection={selection}
           />
         ))}
+        <button
+          onClick={() => deleteAnnotation(activeAnnotationId)}
+          disabled={activeAnnotationId === null}
+        >
+          ❌ Remove this annotation
+        </button>
       </div>
 
       <div
