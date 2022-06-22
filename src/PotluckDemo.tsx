@@ -6,6 +6,7 @@ import { useAutomergeDoc } from "./hooks";
 import { MarkdownDoc } from "./slate-automerge";
 import Automerge from "automerge";
 import PotluckEditor from "./PotluckEditor";
+import { INGREDIENT_TYPE } from "./annotations";
 
 // const DEFAULT_TEXT = `
 // # Thai Peanut Noodle Bowls with Spicy Lime Tofu
@@ -80,6 +81,28 @@ Simmer on low until liquid as evaporated. Chili is ready once flavors are blende
 
 Serve in bowl and garnish to taste with grated cheddar, avocado, sour cream, jalapeño, salsa, tortilla chips, Fritos, or corn bread.`;
 
+export type DefaultAnnotationSpec = {
+  start: number;
+  end: number;
+  type: string;
+};
+
+const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
+  { start: 15, end: 58, type: INGREDIENT_TYPE },
+  { start: 96, end: 115, type: INGREDIENT_TYPE },
+  { start: 117, end: 127, type: INGREDIENT_TYPE },
+  { start: 133, end: 154, type: INGREDIENT_TYPE },
+  { start: 336, end: 362, type: INGREDIENT_TYPE },
+  { start: 364, end: 390, type: INGREDIENT_TYPE },
+  { start: 392, end: 423, type: INGREDIENT_TYPE },
+  { start: 425, end: 443, type: INGREDIENT_TYPE },
+  { start: 445, end: 458, type: INGREDIENT_TYPE },
+  { start: 460, end: 490, type: INGREDIENT_TYPE },
+  { start: 492, end: 513, type: INGREDIENT_TYPE },
+  { start: 515, end: 544, type: INGREDIENT_TYPE },
+  { start: 550, end: 573, type: INGREDIENT_TYPE },
+];
+
 export default function PotluckDemo() {
   const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>({
     content: new Automerge.Text(DEFAULT_TEXT),
@@ -88,7 +111,11 @@ export default function PotluckDemo() {
 
   return (
     <div className="max-w-6xl p-4">
-      <PotluckEditor doc={doc} changeDoc={changeDoc} />
+      <PotluckEditor
+        doc={doc}
+        changeDoc={changeDoc}
+        defaultAnnotations={DEFAULT_ANNOTATIONS}
+      />
     </div>
   );
 }

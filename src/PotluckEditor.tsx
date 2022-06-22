@@ -49,6 +49,7 @@ import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
 import { AnnotationType, ANNOTATION_TYPES } from "./annotations";
 import { applyPluginTransforms } from "./plugins";
+import { DefaultAnnotationSpec } from "./PotluckDemo";
 
 registerAllModules();
 
@@ -99,9 +100,10 @@ Prism.languages.markdown = Prism.languages.extend("markup", {}), Prism.languages
 //@ts-ignore
 }), Prism.languages.markdown.bold.inside.url = Prism.util.clone(Prism.languages.markdown.url), Prism.languages.markdown.italic.inside.url = Prism.util.clone(Prism.languages.markdown.url), Prism.languages.markdown.bold.inside.italic = Prism.util.clone(Prism.languages.markdown.italic), Prism.languages.markdown.italic.inside.bold = Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
 
-type MarkdownEditorProps = {
+type PotluckEditorProps = {
   doc: MarkdownDoc;
   changeDoc: (callback: (doc: MarkdownDoc) => void) => void;
+  defaultAnnotations: DefaultAnnotationSpec[];
 };
 
 const PLUGINS: Plugin[] = [ingredientsPlugin, scalerPlugin, timerPlugin];
@@ -129,15 +131,17 @@ const AnnotateButton = ({
   annotationType,
   addAnnotation,
   modifierDown,
+  currentSelection,
 }: {
   annotationType: AnnotationType;
-  addAnnotation: (annotationType: string) => void;
+  addAnnotation: (annotationType: string, currentSelection: Range) => void;
   modifierDown: boolean;
+  currentSelection: Range;
 }) => {
   return (
     <button
       className="toolbar-button"
-      onClick={() => addAnnotation(annotationType._type)}
+      onClick={() => addAnnotation(annotationType._type, currentSelection)}
       css={css`
         border: solid thin #eee;
         border-radius: 5px;
@@ -174,14 +178,25 @@ const AnnotateButton = ({
   );
 };
 
-export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
+export default function PotluckEditor({
+  doc,
+  changeDoc,
+  defaultAnnotations,
+}: PotluckEditorProps) {
   const [selection, setSelection] = useState<Range>(null);
   const [activeAnnotationId, setActiveAnnotationId] = useState<string | null>(
     null
   );
   const [modifierDown, setModifierDown] = useState<boolean>(false);
 
-  const docSpans = doc.annotations;
+  const annotations = doc.annotations;
+
+  console.log({
+    annotations: annotations.map((a) => [
+      a.range.start.index,
+      a.range.end.index,
+    ]),
+  });
 
   // We model the document for Slate as a single text node.
   // It should stay a single node throughout all edits.
@@ -192,8 +207,8 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   ];
 
   const renderLeaf = useCallback(
-    (props) => <Leaf {...props} annotations={docSpans} />,
-    [docSpans, activeAnnotationId]
+    (props) => <Leaf {...props} annotations={annotations} />,
+    [annotations, activeAnnotationId]
   );
 
   // Set up a Slate editor instance w/ some custom Automerge integration stuff
@@ -224,8 +239,14 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
   }, []);
 
   // Add a new annotation to the currently selected text
-  const addAnnotation = (annotationType: string) => {
-    const currentSelection = selection;
+  const addAnnotation = (
+    annotationType: string,
+    currentSelection: Range | null
+  ) => {
+    if (currentSelection === null) {
+      return;
+    }
+
     changeDoc((doc: MarkdownDoc) => {
       const automergeSpan = automergeSpanFromSlateRange(
         doc.content,
@@ -255,15 +276,32 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
 
     // move the cursor to the end of the current selection
     Transforms.select(editor, {
-      anchor: selection.focus,
-      focus: selection.focus,
+      anchor: currentSelection.focus,
+      focus: currentSelection.focus,
     });
   };
+
+  // Add some default annotations to the doc
+  useEffect(() => {
+    for (const annotationSpec of defaultAnnotations) {
+      const annotationRange = {
+        anchor: {
+          path: [0, 0],
+          offset: annotationSpec.start,
+        },
+        focus: {
+          path: [0, 0],
+          offset: annotationSpec.end,
+        },
+      };
+      addAnnotation(annotationSpec.type, annotationRange);
+    }
+  }, []);
 
   // Set the active annotation based on the latest selection in the doc
   useEffect(() => {
     let activeCommentId = null;
-    for (const annotation of docSpans) {
+    for (const annotation of annotations) {
       if (
         activeCommentId !== annotation.id &&
         selection &&
@@ -305,7 +343,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
       };
 
       // Add comment highlighting decorations
-      for (const docSpan of docSpans) {
+      for (const docSpan of annotations) {
         ranges.push({
           ...slateRangeFromAutomergeSpan(docSpan.range),
           highlighted: true,
@@ -336,7 +374,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
 
       return ranges;
     },
-    [docSpans, activeAnnotationId]
+    [annotations, activeAnnotationId]
   );
 
   return (
@@ -363,6 +401,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
             annotationType={annotationType}
             addAnnotation={addAnnotation}
             modifierDown={modifierDown}
+            currentSelection={selection}
           />
         ))}
       </div>
@@ -393,7 +432,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
                 if (isHotkey(hotkey, event as any)) {
                   event.preventDefault();
                   const annotationType = HOTKEYS[hotkey];
-                  addAnnotation(annotationType);
+                  addAnnotation(annotationType, selection);
                 }
               }
 
