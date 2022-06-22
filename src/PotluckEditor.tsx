@@ -1,26 +1,18 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { jsx, css } from "@emotion/react";
 import "handsontable/dist/handsontable.full.css";
-import { formatQuantity } from "format-quantity";
 import scalerPlugin from "./plugins/scaler";
 import ingredientsPlugin from "./plugins/ingredients";
 import timerPlugin from "./plugins/timer";
 import {
-  AnnotationView,
-  ComputedProperties,
   getMergedExtensions,
   Plugin,
   annotationWithComputedProps,
 } from "./plugins";
 import { isString } from "lodash";
+import Automerge from "automerge";
 
 import {
   createEditor,
@@ -33,7 +25,13 @@ import {
   Transforms,
 } from "slate";
 import { withHistory } from "slate-history";
-import { Editable, RenderLeafProps, Slate, withReact } from "slate-react";
+import {
+  Editable,
+  ReactEditor,
+  RenderLeafProps,
+  Slate,
+  withReact,
+} from "slate-react";
 import Prism, { Token } from "prismjs";
 import { loremIpsum } from "lorem-ipsum";
 import { v4 as uuidv4 } from "uuid";
@@ -49,7 +47,7 @@ import isHotkey from "is-hotkey";
 import { pick, pickBy, sortBy, uniq } from "lodash";
 import { HotTable } from "@handsontable/react";
 import { registerAllModules } from "handsontable/registry";
-import { ANNOTATION_TYPES } from "./annotations";
+import { AnnotationType, ANNOTATION_TYPES } from "./annotations";
 import { applyPluginTransforms } from "./plugins";
 
 registerAllModules();
@@ -98,6 +96,7 @@ Prism.languages.markdown = Prism.languages.extend("markup", {}), Prism.languages
     pattern: /!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,
     inside: {variable: {pattern: /(!?\[)[^\]]+(?=\]$)/, lookbehind: !0}, string: {pattern: /"(?:\\.|[^"\\])*"(?=\)$)/}}
   }
+//@ts-ignore
 }), Prism.languages.markdown.bold.inside.url = Prism.util.clone(Prism.languages.markdown.url), Prism.languages.markdown.italic.inside.url = Prism.util.clone(Prism.languages.markdown.url), Prism.languages.markdown.bold.inside.italic = Prism.util.clone(Prism.languages.markdown.italic), Prism.languages.markdown.italic.inside.bold = Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
 
 type MarkdownEditorProps = {
@@ -109,7 +108,7 @@ const PLUGINS: Plugin[] = [ingredientsPlugin, scalerPlugin, timerPlugin];
 
 const EXTENSIONS_BY_ANNOTATION = getMergedExtensions(PLUGINS);
 
-const HOTKEYS = {
+const HOTKEYS: { [key: string]: string } = {
   "mod+1": ANNOTATION_TYPES[0]._type,
   "mod+2": ANNOTATION_TYPES[1]._type,
   "mod+3": ANNOTATION_TYPES[2]._type,
@@ -221,7 +220,7 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
           );
         }
       }
-    );
+    ) as ReactEditor; // TODO: Figure out why we need to cast this type here?
   }, []);
 
   // Add a new annotation to the currently selected text
@@ -296,7 +295,10 @@ export default function PotluckEditor({ doc, changeDoc }: MarkdownEditorProps) {
         } else if (typeof token.content === "string") {
           return token.content.length;
         } else if (Array.isArray(token.content)) {
-          return token.content.reduce((l, t) => l + getLength(t), 0);
+          return token.content.reduce(
+            (l: number, t: any) => l + getLength(t),
+            0
+          );
         } else {
           return 0;
         }
@@ -621,7 +623,7 @@ const Leaf = ({
 
           ${altView &&
           isAltViewText &&
-          css`
+          `
             &::after {
               content: "${altView}";
               padding: 0 0.2rem;

@@ -3,12 +3,9 @@
 
 import { jsx, css } from "@emotion/react";
 import { useAutomergeDoc } from "./hooks";
-import { MarkdownDoc, RichTextDoc } from "./slate-automerge";
+import { MarkdownDoc } from "./slate-automerge";
 import Automerge from "automerge";
-import ReactJson from "react-json-view";
 import PotluckEditor from "./PotluckEditor";
-import { useEffect } from "react";
-import { v4 as uuidv4 } from "uuid";
 
 // const DEFAULT_TEXT = `
 // # Thai Peanut Noodle Bowls with Spicy Lime Tofu
