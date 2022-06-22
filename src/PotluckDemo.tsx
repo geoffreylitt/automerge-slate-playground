@@ -2,7 +2,7 @@
 /* @jsxFrag React.Fragment */
 
 import {jsx, css} from "@emotion/react";
-import {useAutomergeDoc} from "./hooks";
+import {useAutomergeDoc, useObservable, useObservableListener} from "./hooks";
 import {MarkdownDoc} from "./slate-automerge";
 import Automerge from "automerge";
 import PotluckEditor from "./PotluckEditor";
@@ -10,8 +10,8 @@ import {DURATION_TYPE, INGREDIENT_TYPE, SCALE_FACTOR_TYPE} from "./annotations";
 import ingredientsPlugin from "./plugins/ingredients";
 import scalerPlugin from "./plugins/scaler";
 import timerPlugin from "./plugins/timer";
-import {useState} from "react"
-import {getMergedExtensions} from "./plugins";
+import {useState, useRef} from "react"
+import {getMergedExtensions, useEffectHandlers} from "./plugins";
 
 // const DEFAULT_TEXT = `
 // # Thai Peanut Noodle Bowls with Spicy Lime Tofu
@@ -114,59 +114,23 @@ const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
 
 const SHOW_DATA_DUMP = false;
 
+
 export default function PotluckDemo() {
-  // can't use automerge currently because plugins contain fuction values
+  // can't use automerge currently because plugins contain function values
   const [plugins, setPlugins] = useState([ingredientsPlugin, scalerPlugin, timerPlugin]);
   const extensionsByType = getMergedExtensions(plugins)
 
+  const observable = useObservable()
+
   const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>({
-    content: new Automerge.Text(DEFAULT_TEXT),
-    annotations: [],
-  }, (diff) => {
-    if (diff.objectId !== '_root') {
-      return
-    }
-
-    const annotations: any = Object.values(diff.props.annotations)[0]
-
-    const changedIndex: { [index: string]: boolean } = {}
-    const insertedIndex: { [index: string]: boolean } = {}
-    const deletedIndex: { [index: string]: boolean } = {}
-
-    const edits = annotations.edits;
-
-    if (edits) {
-      for (const edit of edits) {
-        switch (edit.action) {
-          case 'insert':
-            insertedIndex[edit.index] = true
-            break;
-          case 'remove':
-            deletedIndex[edit.index] = true
-            break;
-        }
-      }
-    }
-
-    for (const prop of Object.keys(annotations.props)) {
-      if (!insertedIndex[prop]) {
-        changedIndex[prop] = true
-      }
-    }
-
-    const changes = Object.entries(changedIndex)
-      .map(([index]) => ({ type: 'change', index }))
-      .concat(
-        Object.entries(insertedIndex)
-          .map(([index]) => ({ type: 'insert', index }))
-      )
-      .concat(
-        Object.entries(deletedIndex)
-          .map(([index]) => ({ type: 'remove', index }))
-      )
-
-    console.log('changes', changes)
+    initialDoc: {
+      content: new Automerge.Text(DEFAULT_TEXT),
+      annotations: [],
+    },
+    observable
   });
+
+  useEffectHandlers(observable, doc, extensionsByType)
 
   return (
     <div className="max-w-6xl p-4">

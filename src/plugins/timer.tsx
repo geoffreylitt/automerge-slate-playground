@@ -40,6 +40,22 @@ const timerPlugin: Plugin = {
             {minutesDigits.toString().padStart(2, "0")} : {secondsDigits.toString().padStart(2, "0")}
           </div>
         )
+      },
+
+      effect: () => {
+        return {
+          onMount () {
+            console.log('init duration')
+          },
+
+          onUnmount () {
+            console.log('remove duration')
+          },
+
+          onChange () {
+            console.log('update duration')
+          }
+        }
       }
     },
   },

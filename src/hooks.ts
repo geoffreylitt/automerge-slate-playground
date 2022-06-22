@@ -1,26 +1,15 @@
 import Automerge from "automerge";
-import {useState, useRef} from "react";
+import {useState, useRef, useEffect} from "react";
 
-export function useAutomergeDoc<DocType>(
+export function useAutomergeDoc<DocType>({
+ initialDoc,
+ observable
+} : {
   initialDoc: DocType,
-  onChange?: (diff: any, before: DocType, after: DocType) => void
-): [DocType, (callback: any) => void, (doc: DocType) => void] {
-
-  const onObserveRef = useRef<any>()
-  onObserveRef.current = onChange
-
+  observable: Automerge.Observable
+}): [DocType, (callback: any) => void, (doc: DocType) => void] {
   const [doc, setDoc] = useState<DocType>(() => {
-    let observable = new Automerge.Observable()
-
-    const doc = Automerge.from(initialDoc, { observable }) as DocType
-
-    observable.observe(doc, (diff, before, after) => {
-      if (onObserveRef.current) {
-        onObserveRef.current(diff, before, after)
-      }
-    })
-
-    return doc
+    return Automerge.from(initialDoc, { observable }) as DocType
   });
 
   const changeDoc = (callback: any) => {
@@ -28,4 +17,26 @@ export function useAutomergeDoc<DocType>(
   };
 
   return [doc, changeDoc, setDoc];
+}
+
+export function useObservable () {
+  const observableRef = useRef(new Automerge.Observable())
+
+  return observableRef.current
+}
+
+export function useObservableListener<DocType>(
+  observable: Automerge.Observable,
+  doc: DocType,
+  callback: (diff: Automerge.ObjectDiff, before: DocType, after: DocType) => void
+) {
+  const callbackRef : any = useRef()
+
+  callbackRef.current = callback
+
+  useEffect(() => {
+    observable.observe(doc, (diff, before, after) => {
+      callbackRef.current(diff, before, after)
+    })
+  }, [])
 }
