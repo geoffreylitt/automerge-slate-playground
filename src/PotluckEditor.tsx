@@ -261,6 +261,8 @@ export default function PotluckEditor({
         },
       ];
 
+      console.log('add', automergeSpan);
+
       const transformedAnnotations = applyPluginTransforms(
         PLUGINS,
         doc,
@@ -603,6 +605,8 @@ const Leaf = ({
 
   let altView = getAltView(activeAnnotations, annotations);
 
+  const isAltViewText = isString(altView)
+
   const highlightColors = activeAnnotationTypes.map((a) => a.color);
   const blendedColor = highlightColors.reduce(
     (blended, color) =>
@@ -617,9 +621,25 @@ const Leaf = ({
     <span
       {...attributes}
       css={css`
+        position: relative;
         font-weight: ${leaf.bold && "bold"};
         font-style: ${leaf.italic && "italic"};
         text-decoration: ${leaf.underlined && "underline"};
+        
+        &:hover > .menu {
+          display: inherit;
+        }
+        
+        .menu {
+          position: absolute;
+          display: none;
+          top: 100%;
+          left: 0;
+          background: #fff;
+          z-index: 10;
+          border: 1px solid #ddd;
+        }
+        
         ${leaf.title &&
         css`
           display: inline-block;
@@ -670,7 +690,7 @@ const Leaf = ({
               .join(" ")};
           }
 
-          ${altView &&
+          ${altView && isAltViewText &&
           `
             &::after {
               content: "${altView}";
@@ -683,7 +703,14 @@ const Leaf = ({
         `}
       `}
     >
-      {children}
+      {children}{altView && !isAltViewText && (
+        <div
+          className="menu"
+          contentEditable={false}
+        >
+          {altView}
+        </div>
+      )}
     </span>
   );
 };

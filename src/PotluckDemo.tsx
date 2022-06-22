@@ -1,12 +1,12 @@
 /** @jsx jsx */
 /* @jsxFrag React.Fragment */
 
-import { jsx, css } from "@emotion/react";
-import { useAutomergeDoc } from "./hooks";
-import { MarkdownDoc } from "./slate-automerge";
+import {jsx, css} from "@emotion/react";
+import {useAutomergeDoc} from "./hooks";
+import {MarkdownDoc} from "./slate-automerge";
 import Automerge from "automerge";
 import PotluckEditor from "./PotluckEditor";
-import { INGREDIENT_TYPE, SCALE_FACTOR_TYPE } from "./annotations";
+import {DURATION_TYPE, INGREDIENT_TYPE, SCALE_FACTOR_TYPE} from "./annotations";
 
 // const DEFAULT_TEXT = `
 // # Thai Peanut Noodle Bowls with Spicy Lime Tofu
@@ -104,6 +104,7 @@ const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
   { start: 515, end: 544, type: INGREDIENT_TYPE },
   { start: 550, end: 573, type: INGREDIENT_TYPE },
   { start: 1164, end: 1166, type: SCALE_FACTOR_TYPE },
+  { start: 725, end: 732, type: DURATION_TYPE }
 ];
 
 export default function PotluckDemo() {
