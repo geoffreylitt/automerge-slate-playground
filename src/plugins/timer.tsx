@@ -33,14 +33,10 @@ const timerPlugin: Plugin = {
         remainingSeconds: ({ totalSeconds }) => totalSeconds,
       },
 
-      view: ({ minutesDigits, secondsDigits }) => {
-        return (
-          <div>
-            ({minutesDigits.toString().padStart("0", 2)} :{" "}
-            {secondsDigits.toString().padStart("0", 2)} ▶️)
-          </div>
-        );
-      },
+      view: ({ minutesDigits, secondsDigits }) =>
+        `${minutesDigits.toString().padStart("0", 2)} : ${secondsDigits
+          .toString()
+          .padStart("0", 2)} ▶️`,
     },
   },
 };

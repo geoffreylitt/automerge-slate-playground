@@ -445,7 +445,7 @@ export default function PotluckEditor({
                 setModifierDown(false);
               }
             }}
-            style={{ maxHeight: "700px", overflow: "auto" }}
+            style={{ maxHeight: "800px", overflow: "auto" }}
           />
         </Slate>
       </div>
@@ -591,8 +591,6 @@ const Leaf = ({
 
   let altView = getAltView(activeAnnotations, annotations);
 
-  const isAltViewText = isString(altView);
-
   const highlightColors = activeAnnotationTypes.map((a) => a.color);
   const blendedColor = highlightColors.reduce(
     (blended, color) =>
@@ -661,7 +659,6 @@ const Leaf = ({
           }
 
           ${altView &&
-          isAltViewText &&
           `
             &::after {
               content: "${altView}";
@@ -675,22 +672,6 @@ const Leaf = ({
       `}
     >
       {children}
-
-      {altView && !isAltViewText && (
-        <>
-          {" "}
-          <div
-            contentEditable="false"
-            style={{
-              cursor: "default",
-              color: "gray",
-              display: "inline-block",
-            }}
-          >
-            {altView}
-          </div>
-        </>
-      )}
     </span>
   );
 };

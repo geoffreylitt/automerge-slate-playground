@@ -6,7 +6,7 @@ import { useAutomergeDoc } from "./hooks";
 import { MarkdownDoc } from "./slate-automerge";
 import Automerge from "automerge";
 import PotluckEditor from "./PotluckEditor";
-import { INGREDIENT_TYPE } from "./annotations";
+import { INGREDIENT_TYPE, SCALE_FACTOR_TYPE } from "./annotations";
 
 // const DEFAULT_TEXT = `
 // # Thai Peanut Noodle Bowls with Spicy Lime Tofu
@@ -79,7 +79,9 @@ Optionally rinse 1 can red kidney beans and 1 can black beans with water and dra
 
 Simmer on low until liquid as evaporated. Chili is ready once flavors are blended and texture is to your liking.
 
-Serve in bowl and garnish to taste with grated cheddar, avocado, sour cream, jalapeño, salsa, tortilla chips, Fritos, or corn bread.`;
+Serve in bowl and garnish to taste with grated cheddar, avocado, sour cream, jalapeño, salsa, tortilla chips, Fritos, or corn bread.
+
+**Scale factor**: 3x.`;
 
 export type DefaultAnnotationSpec = {
   start: number;
@@ -101,6 +103,7 @@ const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
   { start: 492, end: 513, type: INGREDIENT_TYPE },
   { start: 515, end: 544, type: INGREDIENT_TYPE },
   { start: 550, end: 573, type: INGREDIENT_TYPE },
+  { start: 1164, end: 1166, type: SCALE_FACTOR_TYPE },
 ];
 
 export default function PotluckDemo() {
