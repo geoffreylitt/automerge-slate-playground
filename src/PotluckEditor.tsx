@@ -261,8 +261,6 @@ export default function PotluckEditor({
         },
       ];
 
-      console.log('add', automergeSpan);
-
       const transformedAnnotations = applyPluginTransforms(
         PLUGINS,
         doc,
@@ -387,6 +385,12 @@ export default function PotluckEditor({
     [annotations, activeAnnotationId]
   );
 
+  const onChangeAnnotations = useCallback((mutate) => {
+    changeDoc((doc) => {
+      mutate(doc.annotations)
+    })
+  }, [changeDoc])
+
   return (
     <div
       css={css`
@@ -474,6 +478,7 @@ export default function PotluckEditor({
         <Annotations
           activeAnnotationId={activeAnnotationId}
           setActiveAnnotationId={setActiveAnnotationId}
+          onChangeAnnotations={onChangeAnnotations}
           annotations={doc.annotations}
           text={doc.content}
         />
@@ -487,11 +492,13 @@ const Annotations = ({
   annotations,
   activeAnnotationId,
   setActiveAnnotationId,
+  onChangeAnnotations,
 }: {
   text: Automerge.Text;
   annotations: Annotation[];
   activeAnnotationId: string;
   setActiveAnnotationId: (id: string) => void;
+  onChangeAnnotations: (mutation: (annotations: Annotation[]) => void) => void
 }) => {
   const annotationTypes = uniq(annotations.map((a) => a._type));
 
@@ -553,6 +560,17 @@ const Annotations = ({
                 if (annotation) {
                   setActiveAnnotationId(annotation.id);
                 }
+              }}
+              afterChange={(changes) => {
+                if (!changes) {
+                  return
+                }
+
+                onChangeAnnotations((annotations : Annotation[]) => {
+                  for (const [row, prop, oldValue, newValue] of changes) {
+                    annotations[row].data[prop] = newValue
+                  }
+                })
               }}
             />
           </div>
