@@ -107,6 +107,8 @@ const DEFAULT_ANNOTATIONS: DefaultAnnotationSpec[] = [
   { start: 725, end: 732, type: DURATION_TYPE }
 ];
 
+const SHOW_DATA_DUMP = false;
+
 export default function PotluckDemo() {
   const [doc, changeDoc] = useAutomergeDoc<MarkdownDoc>({
     content: new Automerge.Text(DEFAULT_TEXT),
@@ -120,6 +122,14 @@ export default function PotluckDemo() {
         changeDoc={changeDoc}
         defaultAnnotations={DEFAULT_ANNOTATIONS}
       />
+
+      {SHOW_DATA_DUMP && <pre>
+        {JSON.stringify(
+          doc.annotations.filter(({_type}) => _type === SCALE_FACTOR_TYPE),
+          null,
+          2
+        )}
+      </pre>}
     </div>
   );
 }

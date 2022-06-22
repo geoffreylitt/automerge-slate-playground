@@ -50,6 +50,10 @@ export const ANNOTATION_TYPES: AnnotationType[] = [
   {
     _type: SCALE_FACTOR_TYPE,
     icon: "🍴",
+    visibleFields: [
+      "text",
+      "scaleFactor"
+    ],
     color: { r: 65, g: 155, b: 204 },
   },
   {

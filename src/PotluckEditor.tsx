@@ -568,7 +568,14 @@ const Annotations = ({
 
                 onChangeAnnotations((annotations : Annotation[]) => {
                   for (const [row, prop, oldValue, newValue] of changes) {
-                    annotations[row].data[prop] = newValue
+                    const id = annotationsOfType[row].id
+                    console.log('id', id, {annotationsForTable})
+
+                    const index = annotations.findIndex((annotation) => {
+                      return annotation.id === id
+                    })
+
+                    annotations[index].data[prop] = newValue
                   }
                 })
               }}
