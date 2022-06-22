@@ -8,8 +8,7 @@
     "build": "yarn run build-automerge && node build.js",
     "check": "prettier --loglevel warn --check .",
     "start": "node build.js -w",
-    "test": "ts-mocha test/*.ts",
-    "prepare": "husky install"
+    "test": "ts-mocha test/*.ts"
   },
   "author": "",
   "license": "ISC",
